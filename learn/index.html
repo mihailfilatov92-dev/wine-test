@@ -147,6 +147,10 @@ const BLOCKS = [{"key": "base", "title": "Базовый курс", "lead": "9 �
 const OFF = {"base": 0, "grape": 25000, "label": 29000, "fr": 5000, "frx": 53000, "it": 13000, "itx": 21000, "es": 38000, "pt": 41000, "de": 33000, "at": 35000, "ee": 36000, "ge": 44000, "am": 45000, "ru": 47000, "nw": 50000, "ksn": 9000};
 const need=m=>Math.ceil(TESTS[m.id].length*0.8);
 const passed=m=>(st.best[m.id]||0)>=need(m);
+function introCard(){
+  const ms=MODS.filter(m=>["base","grape","label"].includes(m.block)), done=ms.filter(passed).length;
+  return `<div class="card final"><div><h3 style="margin:0">Вводный тест</h3><p class="lead" style="font-size:14px">После трёх первых блоков: 45 вопросов от простых к сложным и 5 этикеток с нашей полки. Пройдено модулей: ${done} из ${ms.length}.</p></div><a class="btn ghost" href="../intro/">Открыть тест</a></div>`;
+}
 function hub(){
   if(!st.open) st.open={base:true};
   $("blocks").innerHTML=BLOCKS.map(b=>{
@@ -155,7 +159,7 @@ function hub(){
       <div class="stack" style="gap:6px"><span class="count">Пройдено модулей: ${done} из ${ms.length}</span><div class="meter"><i style="width:${done/ms.length*100}%"></i></div></div></summary>
       <ul class="mods">`+ms.map(m=>{ const s=st.best[m.id], tot=TESTS[m.id].length;
         const chip= s===undefined?'<span class="chip">не начат</span>': s>=need(m)?`<span class="chip ok">пройден · ${s}/${tot}</span>`:`<span class="chip try">${s}/${tot} · ещё раз</span>`;
-        return `<li><a href="#${m.id}"><span class="num">${m.n}</span><span class="mt">${esc(m.title)}</span>${chip}</a></li>`; }).join("")+`</ul></details>`;
+        return `<li><a href="#${m.id}"><span class="num">${m.n}</span><span class="mt">${esc(m.title)}</span>${chip}</a></li>`; }).join("")+`</ul></details>`+(b.key==="label"?introCard():"");
   }).join("");
   document.querySelectorAll("details.blk").forEach(d=>d.addEventListener("toggle",()=>{ st.open[d.dataset.b]=d.open; save(); }));
   $("hub").hidden=false; $("mod").hidden=true;
