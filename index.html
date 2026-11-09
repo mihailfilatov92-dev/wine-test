@@ -85,7 +85,7 @@ summary{cursor:pointer;font-weight:500}
   <section id="s-intro" class="stack">
     <p class="eyebrow">Винотеки · проверка знаний</p>
     <h1>Тест по вину и нашему ассортименту</h1>
-    <p class="lead">Три части. Первые две — с вариантами ответа, третья — открытые вопросы, на них отвечай своими словами. Подглядывать в материалы Энотрии не нужно: нам важно понять, что ты знаешь сейчас. Ответы сохраняются на телефоне, можно прерваться и вернуться. Набор вопросов у каждого свой и меняется при каждом новом прохождении.</p>
+    <p class="lead">Три части. Первые две — с вариантами ответа, третья — открытые вопросы, на них отвечай своими словами. Подглядывать в материалы Энотрии не нужно: нам важно понять, что ты знаешь сейчас. Ответы сохраняются на телефоне, можно прерваться и вернуться. Чтобы начать, нужен код допуска от управляющего: один код — одно прохождение, набор вопросов привязан к коду.</p>
     <ul class="parts">
       <li><b>1</b><div><div>База</div><span>45 вопросов · вино, Франция, крепкие напитки, наша полка</span></div></li>
       <li><b>2</b><div><div>Углублённая</div><span>30 вопросов · регионы, технологии, классификации, крепкие</span></div></li>
@@ -98,7 +98,11 @@ summary{cursor:pointer;font-weight:500}
     <label class="f" for="shop">Магазин <span class="hint">необязательно</span>
       <input type="text" id="shop" placeholder="Например, Большая Октябрьская">
     </label>
+    <label class="f" for="acode">Код допуска <span class="hint">выдаёт управляющий, один код — одно прохождение</span>
+      <input type="text" id="acode" inputmode="numeric" autocomplete="off" placeholder="12345-678">
+    </label>
     <p id="fio-err" class="err" hidden>Укажи фамилию и имя, иначе результат не засчитать.</p>
+    <p id="code-err" class="err" hidden></p>
     <div class="row"><button id="start" type="button">Начать</button></div>
   </section>
 
@@ -163,6 +167,11 @@ let DATA={p1:[],p2:[],p3:[]};
 function useSel(){ DATA={p1:st.sel.p1.map(id=>BYID[id]).filter(Boolean),p2:st.sel.p2.map(id=>BYID[id]).filter(Boolean),p3:st.sel.p3.map(id=>BYID[id]).filter(Boolean)}; }
 const SALT = "96925128dfdf85ca";
 const KEY = "wine-quiz-v2";
+const CSALT = "0a1e78897951", UKEY = "wine-quiz-used";
+function acheck(s){ return String(fnv(CSALT+s)%1000).padStart(3,"0"); }
+function parseCode(v){ const d=String(v).replace(/\D/g,""); if(d.length!==8||d[0]==="0") return ""; const s=d.slice(0,5); return acheck(s)===d.slice(5) ? s+"-"+d.slice(5) : ""; }
+function usedCodes(){ try{ return JSON.parse(localStorage.getItem(UKEY)||"[]"); }catch(e){ return []; } }
+function markUsed(c){ try{ const u=usedCodes(); if(!u.includes(c)){ u.push(c); localStorage.setItem(UKEY,JSON.stringify(u)); } }catch(e){} }
 const review = location.hash.replace("#","").toLowerCase() === "proverka";
 const $ = id => document.getElementById(id);
 
@@ -242,8 +251,12 @@ document.addEventListener("click",e=>{
 $("start").addEventListener("click",()=>{
   const fio=$("fio").value.trim();
   if(fio.split(/\s+/).length<2){ $("fio-err").hidden=false; $("fio").focus(); return; }
-  $("fio-err").hidden=true; st.fio=fio; st.shop=$("shop").value.trim();
-  if(!st.sel){ st.seed=Math.floor(Math.random()*900000)+100000; st.sel=makeTest(st.seed); st.a={p1:{},p2:{},p3:{}}; st.notes={}; }
+  $("fio-err").hidden=true;
+  const ac=parseCode($("acode").value), ce=$("code-err");
+  if(!ac){ ce.textContent="Код не подошёл. Проверь цифры или попроси код у управляющего."; ce.hidden=false; $("acode").focus(); return; }
+  if(ac!==st.code && usedCodes().includes(ac)){ ce.textContent="Этот код уже использован. Для нового прохождения попроси у управляющего новый код."; ce.hidden=false; $("acode").focus(); return; }
+  ce.hidden=true; st.fio=fio; st.shop=$("shop").value.trim();
+  if(!st.sel || st.code!==ac){ st.code=ac; st.seed=+ac.slice(0,5)*10+7; st.sel=makeTest(st.seed); st.a={p1:{},p2:{},p3:{}}; st.notes={}; }
   useSel();
   st.step=0; save(); renderPart(); show("s-quiz");
 });
@@ -270,7 +283,7 @@ function grade(key){ const wrong=[]; DATA[key].forEach((q,i)=>{ if(st.a[key][i]!
 function buildMsg(){
   const g1=grade("p1"), g2=grade("p2");
   const d=new Date(); const date=d.toLocaleDateString("ru-RU")+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
-  let t=`ТЕСТ ПО ВИНУ — РЕЗУЛЬТАТ\nФИО: ${st.fio}\n`+(st.shop?`Магазин: ${st.shop}\n`:"")+`Дата: ${date}\n\n`+
+  let t=`ТЕСТ ПО ВИНУ — РЕЗУЛЬТАТ\nФИО: ${st.fio}\n`+(st.shop?`Магазин: ${st.shop}\n`:"")+`Дата: ${date}\nКод допуска: ${st.code||"—"}\n\n`+
     `Вариант: ${st.seed}\n\nЧасть 1 (база): ${g1.ok}/${g1.tot}`+(g1.wrong.length?` · ошибки: ${g1.wrong.join(", ")}`:" · без ошибок")+`\n`+
     `Часть 2 (углублённая): ${g2.ok}/${g2.tot}`+(g2.wrong.length?` · ошибки: ${g2.wrong.join(", ")}`:" · без ошибок")+`\n\n`+
     `Часть 3 (открытые вопросы):\n`;
@@ -283,7 +296,7 @@ function buildMsg(){
   return {t:t+`\nКод проверки: ${code(t)}`, g1, g2};
 }
 function result(){
-  const {t,g1,g2}=buildMsg();
+  const {t,g1,g2}=buildMsg(); if(st.code) markUsed(st.code);
   $("res-h").textContent=`${st.fio}, тест пройден`;
   $("score").innerHTML=`<div><b>${g1.ok}/${g1.tot}</b><span>Часть 1 · база</span></div><div><b>${g2.ok}/${g2.tot}</b><span>Часть 2 · углублённая</span></div><div><b>${DATA.p3.filter((_,i)=>filled(i)).length}/${DATA.p3.length}</b><span>Часть 3 · ответов дано, оценит управляющий</span></div>`;
   $("msg").textContent=t;
@@ -297,19 +310,20 @@ $("copy").addEventListener("click",async()=>{
   catch(e){ const r=document.createRange(); r.selectNodeContents($("msg")); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
     $("copied").textContent="Текст выделен — скопируй его вручную и вставь в чат с управляющим."; $("copied").hidden=false; }
 });
-$("again").addEventListener("click",()=>{ const keep={fio:st.fio,shop:st.shop}; st={fio:keep.fio,shop:keep.shop,step:-1,seed:0,sel:null,a:{p1:{},p2:{},p3:{}},notes:{}}; save(); $("fio").value=st.fio; $("shop").value=st.shop; show("s-intro"); });
+$("again").addEventListener("click",()=>{ const keep={fio:st.fio,shop:st.shop}; st={fio:keep.fio,shop:keep.shop,step:-1,seed:0,sel:null,code:"",a:{p1:{},p2:{},p3:{}},notes:{}}; save(); $("acode").value=""; $("fio").value=st.fio; $("shop").value=st.shop; show("s-intro"); });
 $("vbtn").addEventListener("click",()=>{
   const raw=$("vin").value; const m=raw.match(/Код проверки:\s*([A-Z0-9]{5}-[A-Z0-9]{5})/i); const r=$("vres");
   if(!m){ r.textContent="Не нашёл код проверки в тексте."; r.className="vres bad"; return; }
   const body=raw.slice(0, raw.lastIndexOf(m[0]));
   const ok = code(body).toUpperCase()===m[1].toUpperCase();
-  r.textContent= ok ? "Код совпал: результат не меняли." : "Код не совпал: текст после теста меняли или он скопирован не целиком.";
+  const am=body.match(/Код допуска:\s*([0-9]{5}-[0-9]{3})/), adm = am ? (parseCode(am[1]) ? ` Код допуска ${am[1]} — настоящий, сверь, кому ты его выдавал.` : ` Код допуска ${am[1]} — не наш.`) : " Кода допуска в тексте нет.";
+  r.textContent= (ok ? "Код совпал: результат не меняли." : "Код не совпал: текст после теста меняли или он скопирован не целиком.")+adm;
   r.className = "vres "+(ok?"ok":"bad");
 });
 
 load(); if(st.sel) useSel();
 $("review-intro").hidden=!review;
-$("fio").value=st.fio; $("shop").value=st.shop;
+$("fio").value=st.fio; $("shop").value=st.shop; $("acode").value=st.code||"";
 if(st.step===3) result(); else if(st.step>=0 && st.step<=2){ renderPart(); show("s-quiz"); } else show("s-intro");
 </script>
 
