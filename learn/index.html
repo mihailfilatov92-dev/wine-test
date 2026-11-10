@@ -46,6 +46,18 @@ a{color:var(--wine)}
 .chip.try{background:var(--wine-soft);color:var(--wine);border-color:transparent}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
 .howto ol{margin:8px 0 0;padding-left:20px;display:grid;gap:4px}
+.tiles{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:600px){.tiles{grid-template-columns:repeat(3,1fr)}.tile{min-height:132px}}
+.tile{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;color:var(--ink);text-decoration:none}
+.tile:hover{border-color:var(--wine)}
+.tile-h{font-family:var(--display);font-size:24px;line-height:1.15}
+.tile-d{font-size:14px;color:var(--muted);line-height:1.4}
+.tile-main{grid-column:1/-1;background:var(--wine);border-color:var(--wine);color:#fff;min-height:0;padding:20px}
+.tile-main .tile-h{font-size:32px}.tile-main .tile-d,.tile-main .tile-s{color:rgba(255,255,255,.85)}
+.tile-s{font-size:14px;margin-top:6px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile-main{color:var(--bg)}:root:not([data-theme="light"]) .tile-main .tile-d,:root:not([data-theme="light"]) .tile-main .tile-s{color:var(--bg);opacity:.85}:root:not([data-theme="light"]) .tile-main .meter i{background:var(--bg)}}
+.tile-main .meter{background:rgba(255,255,255,.25)}.tile-main .meter i{background:#fff}
+.empty{border-style:dashed}
 .final{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .btn,button{font:inherit;font-weight:600;border-radius:999px;padding:11px 20px;border:1px solid var(--wine);background:var(--wine);color:var(--surface);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 .btn.ghost,button.ghost{background:transparent;color:var(--wine)}
@@ -101,32 +113,81 @@ button:focus-visible,a:focus-visible,.opt:focus-visible{outline:2px solid var(--
 <body>
 <div class="wrap">
   <section id="hub" class="stack">
-    <p class="eyebrow">Винотеки · обучение</p>
-    <h1>Обучение по вину</h1>
-    <p class="lead">Короткие модули по 15–20 минут: от того, как делают вино, до разговора с гостем. Примеры — бутылки с нашей полки. После каждого модуля — мини-тест, ответы и объяснения видны сразу.</p>
-    <div id="blocks" class="stack" style="gap:12px"></div>
-    <div class="card howto">
-      <h3>Как проходить</h3>
-      <ol>
-        <li>Один модуль — 15–20 минут, можно с телефона. Порядок важен: каждый модуль опирается на предыдущий.</li>
-        <li>Найди в магазине 2–3 бутылки из модуля, подержи их, прочитай этикетку.</li>
-        <li>Пройди мини-тест. Модуль засчитан, если верно 80% ответов. Ошибся — перечитай и пройди ещё раз.</li>
-        <li>Темп — 2–3 модуля в неделю. Вопросы записывай и задавай управляющему на дегустации.</li>
-      </ol>
-      <p class="lead" style="margin-top:10px;font-size:14px">Прогресс сохраняется на этом телефоне. Бутылки в примерах — из ассортимента на октябрь 2026; если какой-то нет в твоём магазине, найди другую того же сорта или региона.</p>
+    <div id="home" class="stack">
+      <div class="stack" style="gap:6px">
+        <h1>Школа винотеки</h1>
+        <p class="lead">Учись, проверяй себя, играй и следи за новыми винами на полке.</p>
+      </div>
+      <nav class="tiles" aria-label="Разделы">
+        <a class="tile tile-main" href="#learn">
+          <span class="tile-h">Обучение</span>
+          <span class="tile-d">Модули от основ до стран и крепких напитков. После каждого — мини-тест.</span>
+          <span class="tile-s" id="ts-learn"></span>
+          <span class="meter"><i id="tm-learn"></i></span>
+        </a>
+        <a class="tile" href="#tests">
+          <span class="tile-h">Тесты</span>
+          <span class="tile-d">Вводный и итоговый — по коду от управляющего.</span>
+        </a>
+        <a class="tile" href="#games">
+          <span class="tile-h">Игры</span>
+          <span class="tile-d">Винный кроссворд: сорта, регионы, термины.</span>
+        </a>
+        <a class="tile" href="#news">
+          <span class="tile-h">Новинки</span>
+          <span class="tile-d" id="ts-news">Новые вина на полке и что о них сказать гостю.</span>
+        </a>
+      </nav>
     </div>
-    <div class="card final">
-      <div><h3 style="margin:0">Винный кроссворд</h3><p class="lead" style="font-size:14px">Сорта, регионы, термины. Сетка каждый раз новая — можно по темам.</p></div>
-      <a class="btn" href="krossvord/">Играть</a>
+
+    <div id="sec-learn" class="stack" hidden>
+      <div class="top"><a href="#">← Главная</a><span class="count" id="lcount"></span></div>
+      <h1>Обучение</h1>
+      <p class="lead">Короткие модули по 15–20 минут: от того, как делают вино, до разговора с гостем. Примеры — бутылки с нашей полки. После каждого модуля — мини-тест.</p>
+      <div id="blocks" class="stack" style="gap:12px"></div>
+      <div class="card howto">
+        <h3>Как проходить</h3>
+        <ol>
+          <li>Один модуль — 15–20 минут, можно с телефона. Порядок важен: каждый модуль опирается на предыдущий.</li>
+          <li>Найди в магазине 2–3 бутылки из модуля, подержи их, прочитай этикетку.</li>
+          <li>Пройди мини-тест. Модуль засчитан, если верно 80% ответов. Ошибся — перечитай и пройди ещё раз.</li>
+          <li>Темп — 2–3 модуля в неделю. Вопросы записывай и задавай управляющему на дегустации.</li>
+        </ol>
+        <p class="lead" style="margin-top:10px;font-size:14px">Прогресс сохраняется на этом телефоне. В модулях можно выбрать магазин, где ты сегодня работаешь, — тогда в списках «Наша полка» сначала будет то, что стоит у тебя.</p>
+      </div>
     </div>
-    <div class="card final">
-      <div><h3 style="margin:0">Итоговый тест</h3><p class="lead" style="font-size:14px">Когда пройдёшь все модули — по заданию управляющего.</p></div>
-      <a class="btn ghost" href="../">Открыть тест</a>
+
+    <div id="sec-tests" class="stack" hidden>
+      <div class="top"><a href="#">← Главная</a></div>
+      <h1>Тесты</h1>
+      <p class="lead">Код допуска выдаёт управляющий: один код — одно прохождение. У каждого теста есть таймер, результат отправляешь управляющему в Telegram.</p>
+      <div id="introcard"></div>
+      <div class="card final">
+        <div><h3 style="margin:0">Итоговый тест</h3><p class="lead" style="font-size:14px">Когда пройдёшь все модули — по заданию управляющего. 90 минут.</p></div>
+        <a class="btn ghost" href="../">Открыть тест</a>
+      </div>
+    </div>
+
+    <div id="sec-games" class="stack" hidden>
+      <div class="top"><a href="#">← Главная</a></div>
+      <h1>Игры</h1>
+      <p class="lead">Чтобы повторять без скуки. В зачёт не идёт.</p>
+      <div class="card final">
+        <div><h3 style="margin:0">Винный кроссворд</h3><p class="lead" style="font-size:14px">Сорта, регионы, термины. Сетка каждый раз новая — можно по темам.</p></div>
+        <a class="btn" href="krossvord/">Играть</a>
+      </div>
+    </div>
+
+    <div id="sec-news" class="stack" hidden>
+      <div class="top"><a href="#">← Главная</a></div>
+      <h1>Новинки</h1>
+      <p class="lead">Новые вина на нашей полке: что это, как подать и что сказать гостю. Отмечено, в какие магазины они приехали.</p>
+      <div class="card empty"><h3>Первый выпуск готовится</h3><p class="lead" style="font-size:14px">Новинки появятся здесь после ближайшей поставки.</p></div>
     </div>
   </section>
 
   <section id="mod" hidden>
-    <div class="top"><a href="#" id="tohub">← Все модули</a><span class="count" id="mcount"></span></div>
+    <div class="top"><a href="#learn" id="tohub">← Все модули</a><span class="count" id="mcount"></span></div>
     <div class="stack">
       <p class="eyebrow" id="meyebrow"></p>
       <h2 id="mtitle"></h2>
@@ -155,7 +216,7 @@ const need=m=>Math.ceil(TESTS[m.id].length*0.8);
 const passed=m=>(st.best[m.id]||0)>=need(m);
 function introCard(){
   const ms=MODS.filter(m=>["base","grape","label"].includes(m.block)), done=ms.filter(passed).length;
-  return `<div class="card final"><div><h3 style="margin:0">Вводный тест</h3><p class="lead" style="font-size:14px">После трёх первых блоков: 45 вопросов от простых к сложным и 5 этикеток с нашей полки. Пройдено модулей: ${done} из ${ms.length}.</p></div><a class="btn ghost" href="../intro/">Открыть тест</a></div>`;
+  return `<div class="card final"><div><h3 style="margin:0">Вводный тест</h3><p class="lead" style="font-size:14px">После трёх первых блоков: 45 вопросов от простых к сложным и 5 этикеток с нашей полки. Пройдено модулей: ${done} из ${ms.length}.</p></div><a class="btn" href="../intro/">Открыть тест</a></div>`;
 }
 function hub(){
   if(!st.open) st.open={base:true};
@@ -165,9 +226,12 @@ function hub(){
       <div class="stack" style="gap:6px"><span class="count">Пройдено модулей: ${done} из ${ms.length}</span><div class="meter"><i style="width:${done/ms.length*100}%"></i></div></div></summary>
       <ul class="mods">`+ms.map(m=>{ const s=st.best[m.id], tot=TESTS[m.id].length;
         const chip= s===undefined?'<span class="chip">не начат</span>': s>=need(m)?`<span class="chip ok">пройден · ${s}/${tot}</span>`:`<span class="chip try">${s}/${tot} · ещё раз</span>`;
-        return `<li><a href="#${m.id}"><span class="num">${m.n}</span><span class="mt">${esc(m.title)}</span>${chip}</a></li>`; }).join("")+`</ul></details>`+(b.key==="label"?introCard():"");
+        return `<li><a href="#${m.id}"><span class="num">${m.n}</span><span class="mt">${esc(m.title)}</span>${chip}</a></li>`; }).join("")+`</ul></details>`+(b.key==="label"?`<p class="lead" style="font-size:14px;padding-left:4px">После трёх первых блоков — <a href="#tests">вводный тест</a>.</p>`:"");
   }).join("");
   document.querySelectorAll("details.blk").forEach(d=>d.addEventListener("toggle",()=>{ st.open[d.dataset.b]=d.open; save(); }));
+  const all=MODS.length, dn=MODS.filter(passed).length;
+  $("ts-learn").textContent=`Пройдено модулей: ${dn} из ${all}`; $("tm-learn").style.width=(dn/all*100)+"%"; $("lcount").textContent=`${dn} / ${all}`;
+  $("introcard").innerHTML=introCard();
   $("hub").hidden=false; $("mod").hidden=true;
 }
 
@@ -209,7 +273,7 @@ function finish(){
   const r=$("qres");
   r.innerHTML=`<span class="res">${ok} из ${tot}</span><p>${ok>=nd?"Модуль пройден.":`Нужно ${nd} из ${tot}. Перечитай модуль и попробуй ещё раз.`}</p>
     <div class="row">${ok<nd?'<button type="button" id="retry">Пройти тест ещё раз</button>':''}
-    ${next?`<a class="btn ${ok<nd?'ghost':''}" href="#${next.id}">Модуль ${next.n} →</a>`:'<a class="btn" href="#">К списку модулей</a>'}</div>`;
+    ${next?`<a class="btn ${ok<nd?'ghost':''}" href="#${next.id}">Модуль ${next.n} →</a>`:'<a class="btn" href="#learn">К списку модулей</a>'}</div>`;
   r.hidden=false; $("mcount").textContent=`лучший результат: ${st.best[id]}/${tot}`;
   const rb=$("retry"); if(rb) rb.addEventListener("click",()=>{ ans=[]; renderQuiz(); $("quiz").scrollIntoView({behavior:"smooth"}); });
   r.scrollIntoView({behavior:"smooth",block:"center"});
@@ -288,9 +352,14 @@ function awInit(root){
   });
 }
 
-function route(){ const h=location.hash.slice(1); if(/^[a-z]\d+$/.test(h)) openMod(h); else { hub(); window.scrollTo(0,0); } }
+const SECS=["learn","tests","games","news"];
+function route(){ const h=location.hash.slice(1); if(/^[a-z]\d+$/.test(h)){ openMod(h); return; }
+  hub(); const sec=SECS.includes(h)?h:null; $("home").hidden=!!sec; SECS.forEach(k=>$("sec-"+k).hidden=k!==sec);
+  if(sec==="learn" && lastMod){ const el=document.querySelector(`a[href="#${lastMod}"]`); if(el){ el.scrollIntoView({block:"center"}); lastMod=null; return; } }
+  window.scrollTo(0,0); }
+let lastMod=null;
 window.addEventListener("hashchange",route);
-$("tohub").addEventListener("click",e=>{ e.preventDefault(); history.pushState("",document.title,location.pathname); route(); });
+$("tohub").addEventListener("click",()=>{ lastMod=cur&&cur.id; });
 route();
 </script>
 </body>
