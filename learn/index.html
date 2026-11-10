@@ -58,7 +58,7 @@ a{color:var(--wine)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile-main{color:var(--bg)}:root:not([data-theme="light"]) .tile-main .tile-d,:root:not([data-theme="light"]) .tile-main .tile-s{color:var(--bg);opacity:.85}:root:not([data-theme="light"]) .tile-main .meter i{background:var(--bg)}}
 .tile-main .meter{background:rgba(255,255,255,.25)}.tile-main .meter i{background:#fff}
 .empty{border-style:dashed}
-.nw{display:grid;gap:12px}.nw-h{display:flex;flex-direction:column;gap:2px}.nw-orig{font-size:13px;color:var(--muted)}
+.nw{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.nw>*{min-width:0}.nw-h{display:flex;flex-direction:column;gap:2px}.nw-orig{font-size:13px;color:var(--muted)}
 .nw-shops{display:flex;flex-wrap:wrap;gap:6px}.nw-shop{font-size:12.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .nw-shop.in{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}.nw-shop.me{outline:2px solid var(--wine);outline-offset:1px}
 .nw-note{font-size:14px;padding:8px 10px;border-radius:8px;background:var(--wine-soft)}
@@ -378,7 +378,8 @@ function newsRender(){
     return `<article class="card nw" id="nw-${n.id}"><div class="nw-h"><span class="count">Новинка · ${esc(n.week)}${done?" · ✓ проверено":""}</span><h2>${esc(n.name)}</h2><span class="nw-orig">${esc(n.orig)}</span></div>
       <div><p class="count" style="margin:0 0 6px">Приехала в:</p><div class="nw-shops">${shops}</div></div>${note}
       <dl class="nw-facts">${n.facts.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
-      <div class="nw-text">${n.text}</div><p class="nw-say">${esc(n.say)}</p>
+      <p class="nw-say">${esc(n.say)}</p>
+      <details class="nw-more"${done?"":" open"}><summary style="cursor:pointer;color:var(--wine)">Подробнее о вине</summary><div class="nw-text" style="margin-top:10px">${n.text}</div></details>
       <details><summary style="cursor:pointer;color:var(--wine)">Проверь себя — ${n.quiz.length} вопроса</summary>${quiz}</details></article>`;
   }).join("");
 }
