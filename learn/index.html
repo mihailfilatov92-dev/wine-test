@@ -139,7 +139,7 @@ button:focus-visible,a:focus-visible,.opt:focus-visible{outline:2px solid var(--
         </a>
         <a class="tile" href="#games">
           <span class="tile-h">Игры</span>
-          <span class="tile-d">Винный кроссворд и облако вин.</span>
+          <span class="tile-d">Винный кроссворд: сорта, регионы, термины.</span>
         </a>
         <a class="tile" href="#news">
           <span class="tile-h">Новинки</span>
@@ -183,10 +183,6 @@ button:focus-visible,a:focus-visible,.opt:focus-visible{outline:2px solid var(--
       <div class="card final">
         <div><h3 style="margin:0">Винный кроссворд</h3><p class="lead" style="font-size:14px">Сорта, регионы, термины. Сетка каждый раз новая — можно по темам.</p></div>
         <a class="btn" href="krossvord/">Играть</a>
-      </div>
-      <div class="card final">
-        <div><h3 style="margin:0">Облако вин <span class="chip">в разработке</span></h3><p class="lead" style="font-size:14px">Выбери вино — вокруг появятся родственные: тот же производитель, регион, сорт, похожий стиль. Прыгай от вина к вину и изучай полку.</p></div>
-        <a class="btn ghost" href="oblako/">Открыть</a>
       </div>
     </div>
 
@@ -382,7 +378,7 @@ function newsRender(){
     return `<article class="card nw" id="nw-${n.id}"><div class="nw-h"><span class="count">Новинка · ${esc(n.week)}${done?" · ✓ проверено":""}</span><h2>${esc(n.name)}</h2><span class="nw-orig">${esc(n.orig)}</span></div>
       <div><p class="count" style="margin:0 0 6px">Приехала в:</p><div class="nw-shops">${shops}</div></div>${note}
       <dl class="nw-facts">${n.facts.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
-      <div class="nw-text">${n.text}</div><p class="nw-say">${esc(n.say)}</p>${n.shelf?`<a class="btn ghost small" href="oblako/#a=${encodeURIComponent(n.shelf[0])}" style="align-self:flex-start">Открыть в облаке вин</a>`:""}
+      <div class="nw-text">${n.text}</div><p class="nw-say">${esc(n.say)}</p>
       <details><summary style="cursor:pointer;color:var(--wine)">Проверь себя — ${n.quiz.length} вопроса</summary>${quiz}</details></article>`;
   }).join("");
 }
