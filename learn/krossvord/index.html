@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Винный кроссворд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prata&family=Golos+Text:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f2f3f0; --surface:#ffffff; --ink:#1d1f1c; --muted:#5f655d; --line:#d9dcd5;
+  --wine:#7a1f3d; --wine-soft:#f3e6ea; --ok:#2f6b3a; --ok-soft:#e3f0e4; --bad:#a1262f; --bad-soft:#f7e3e4;
+  --sel:#f6dfa8; --selw:#fbf0d3;
+  --display:"Prata",Georgia,serif; --body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#141613; --surface:#1d201c; --ink:#ebece8; --muted:#a3a99f; --line:#33372f;
+  --wine:#e08aa6; --wine-soft:#3a2129; --ok:#7fc58b; --ok-soft:#1f3322; --bad:#f08a8f; --bad-soft:#3d1f22;
+  --sel:#6b5420; --selw:#3a3220; color-scheme:dark}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+[hidden]{display:none!important}
+.wrap{max-width:700px;margin:0 auto;padding:12px max(12px,env(safe-area-inset-left)) 260px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0}
+h1{font-size:clamp(26px,7vw,36px);line-height:1.15}
+p{margin:0}
+a{color:var(--wine)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--wine);font-weight:600}
+.lead{color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-block:4px 10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+button,.btn{font:inherit;font-weight:600;border-radius:999px;padding:10px 18px;border:1px solid var(--wine);background:var(--wine);color:var(--surface);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button.ghost{background:transparent;color:var(--wine)}
+button.small{padding:7px 13px;font-size:14px}
+.themes{display:flex;flex-wrap:wrap;gap:8px}
+.themes button{background:var(--surface);color:var(--ink);border-color:var(--line);font-weight:500;padding:8px 14px;font-size:15px}
+.themes button[aria-pressed=true]{background:var(--wine);color:var(--surface);border-color:var(--wine)}
+.stat{font-size:14px;color:var(--muted)}
+/* grid */
+#gridbox{display:flex;justify-content:center;margin-block:6px}
+#grid{display:grid;gap:2px;touch-action:manipulation;user-select:none}
+.c{position:relative;background:var(--surface);border:1px solid var(--ink);border-radius:3px;display:flex;align-items:center;justify-content:center;font-weight:600;text-transform:uppercase;cursor:pointer}
+.c.x{background:transparent;border-color:transparent;cursor:default}
+.c .n{position:absolute;top:0;left:2px;font-size:9px;line-height:1.1;font-weight:500;color:var(--muted)}
+.c.w{background:var(--selw)}
+.c.cur{background:var(--sel)}
+.c.bad{color:var(--bad);background:var(--bad-soft)}
+.c.hint{color:var(--wine)}
+.c.done{background:var(--ok-soft)}
+/* clues */
+.clues h3{font-size:18px;margin-bottom:6px}
+.clues ol{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:4px}
+.clues li{padding:6px 8px;border-radius:8px;cursor:pointer;font-size:15px}
+.clues li b{color:var(--wine);margin-right:6px}
+.clues li.on{background:var(--selw)}
+.clues li.ok{color:var(--muted);text-decoration:line-through}
+.len{color:var(--muted);font-size:13px;margin-left:4px}
+/* bottom panel */
+#panel{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:10}
+#panel .in{max-width:700px;margin:0 auto}
+#clue{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px;min-height:58px}
+#clue button{padding:0;width:36px;height:36px;justify-content:center;background:transparent;color:var(--wine);border-color:var(--line)}
+#cluetxt{font-size:15px;line-height:1.35}
+#cluetxt b{color:var(--wine)}
+.kb{display:flex;flex-direction:column;gap:6px}
+.kr{display:flex;gap:4px;justify-content:center}
+.kr button{flex:1 1 0;max-width:46px;min-width:0;height:44px;padding:0;justify-content:center;border-radius:7px;background:var(--surface);color:var(--ink);border-color:var(--line);font-weight:500;font-size:17px}
+.kr button:active{background:var(--wine-soft)}
+.kr button.wide{max-width:66px;flex-grow:1.5;color:var(--wine)}
+.tools{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.tools button{padding:7px 12px;font-size:14px;white-space:nowrap}
+#win{border-color:var(--ok);background:var(--ok-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="../">← К обучению</a><span class="stat" id="timer">0:00</span></div>
+
+  <section id="start" class="stack">
+    <p class="eyebrow">Винотеки · игра</p>
+    <h1>Винный кроссворд</h1>
+    <p class="lead">Слова — из модулей обучения: сорта, регионы, термины, крепкое. Сетка каждый раз новая. Выбери тему и начни.</p>
+    <div class="themes" id="themes"></div>
+    <div class="row"><button id="go">Новый кроссворд</button></div>
+    <p class="stat" id="stats"></p>
+  </section>
+
+  <section id="game" class="stack" hidden>
+    <div class="row" style="justify-content:space-between">
+      <span class="eyebrow" id="gtheme"></span>
+      <button class="ghost small" id="newg">Другая тема</button>
+    </div>
+    <div id="win" class="card stack" hidden></div>
+    <div id="gridbox"><div id="grid"></div></div>
+    <div class="clues" id="clues"></div>
+  </section>
+</div>
+
+<div id="panel" hidden><div class="in">
+  <div id="clue"><button type="button" id="prev" aria-label="Предыдущее слово">‹</button><p id="cluetxt"></p><button type="button" id="next" aria-label="Следующее слово">›</button></div>
+  <div class="kb" id="kb"></div>
+  <div class="tools">
+    <button class="ghost small" id="check">Проверить</button>
+    <button class="ghost small" id="hint">Подсказать букву</button>
+    <button class="ghost small" id="reveal">Ответы</button>
+  </div>
+</div></div>
+
+<script>
+const BANK = [{"t": "base", "w": "БРОЖЕНИЕ", "c": "Процесс, в котором дрожжи превращают сахар в спирт и углекислый газ"}, {"t": "base", "w": "ДРОЖЖИ", "c": "Кто съедает сахар виноградного сока и делает из него вино"}, {"t": "base", "w": "МАЦЕРАЦИЯ", "c": "Настаивание сока на кожице: так красное вино получает цвет и танины"}, {"t": "base", "w": "ТАНИНЫ", "c": "Вещества из кожицы и косточек, от которых во рту вяжет и сушит"}, {"t": "base", "w": "КИСЛОТНОСТЬ", "c": "От неё вино свежее и вызывает слюноотделение"}, {"t": "base", "w": "ТЕРРУАР", "c": "Почва, климат, рельеф и руки человека — всё, что делает место уникальным"}, {"t": "base", "w": "КУПАЖ", "c": "Смесь нескольких сортов или партий вина в одной бутылке"}, {"t": "base", "w": "БЛЕНД", "c": "Английское слово для смеси сортов в одном вине"}, {"t": "base", "w": "ВИНТАЖ", "c": "Год урожая винограда, указанный на этикетке"}, {"t": "base", "w": "УРОЖАЙ", "c": "Сбор винограда; его год пишут на этикетке"}, {"t": "base", "w": "БОЧКА", "c": "Дубовая ёмкость, которая даёт вину ваниль, тосты и пряности"}, {"t": "base", "w": "ДУБ", "c": "Дерево, из которого делают винные бочки"}, {"t": "base", "w": "БРЮТ", "c": "Самое популярное сухое игристое по сахару"}, {"t": "base", "w": "САБРАЖ", "c": "Открытие бутылки игристого саблей"}, {"t": "base", "w": "ДЕКАНТЕР", "c": "Графин, в который переливают вино, чтобы оно «подышало» или отделилось от осадка"}, {"t": "base", "w": "АЭРАЦИЯ", "c": "Насыщение вина кислородом, чтобы раскрылся аромат"}, {"t": "base", "w": "ОСАДОК", "c": "Твёрдые частицы на дне бутылки старого красного вина"}, {"t": "base", "w": "ПРОБКА", "c": "Затычка из коры дуба"}, {"t": "base", "w": "СОМЕЛЬЕ", "c": "Специалист по вину в ресторане"}, {"t": "base", "w": "КАВИСТ", "c": "Специалист по вину в винном магазине"}, {"t": "base", "w": "ЛОЗА", "c": "Растение, на котором растёт виноград"}, {"t": "base", "w": "ГРОЗДЬ", "c": "Кисть винограда"}, {"t": "base", "w": "КОЖИЦА", "c": "Часть ягоды, где сидят красящие вещества и большая часть аромата"}, {"t": "base", "w": "БУКЕТ", "c": "Сложный аромат вина, развившийся при выдержке"}, {"t": "base", "w": "ПОСЛЕВКУСИЕ", "c": "Ощущения, которые остаются во рту, когда вино уже проглочено"}, {"t": "base", "w": "ДЕГУСТАЦИЯ", "c": "Оценка вина по виду, аромату и вкусу"}, {"t": "base", "w": "ТЕЛО", "c": "Ощущение веса и плотности вина во рту"}, {"t": "base", "w": "РОЗЕ", "c": "Розовое вино по-французски"}, {"t": "base", "w": "ОРАНЖЕВОЕ", "c": "Белое вино, сделанное как красное, с мацерацией на кожице"}, {"t": "base", "w": "ИГРИСТОЕ", "c": "Вино с пузырьками углекислого газа"}, {"t": "base", "w": "КРЕПЛЕНОЕ", "c": "Вино, в которое добавили виноградный спирт"}, {"t": "base", "w": "ПОЛУСЛАДКОЕ", "c": "Категория по сахару сразу перед сладким; в Грузии бывает «натурально ___»"}, {"t": "base", "w": "ПИРАМИДА", "c": "Так часто изображают систему классификации вин: от простых к лучшим"}, {"t": "base", "w": "БОКАЛ", "c": "Посуда для вина на ножке"}, {"t": "base", "w": "ШТОПОР", "c": "Инструмент, чтобы открыть бутылку с пробкой"}, {"t": "base", "w": "ПРОБКОВЫЙ", "c": "Такой дефект даёт запах мокрого картона и подвала"}, {"t": "base", "w": "ОКИСЛЕНИЕ", "c": "Порча вина от кислорода: цвет буреет, аромат как у печёного яблока"}, {"t": "base", "w": "МАГНУМ", "c": "Бутылка на 1,5 литра"}, {"t": "grape", "w": "ШАРДОНЕ", "c": "Белый сорт Шабли и белой Бургундии"}, {"t": "grape", "w": "РИСЛИНГ", "c": "Белый сорт Мозеля, может пахнуть бензином с возрастом"}, {"t": "grape", "w": "СОВИНЬОН", "c": "Белый сорт с ароматом крыжовника и травы, звезда Сансера и Мальборо"}, {"t": "grape", "w": "МЕРЛО", "c": "Мягкий красный сорт, главный на правом берегу Бордо"}, {"t": "grape", "w": "КАБЕРНЕ", "c": "___ Совиньон — красный сорт с ароматом чёрной смородины"}, {"t": "grape", "w": "ПИНО", "c": "___ Нуар — капризный красный сорт Бургундии"}, {"t": "grape", "w": "СИРА", "c": "Красный сорт северной Роны, в Австралии его зовут иначе"}, {"t": "grape", "w": "ШИРАЗ", "c": "Так в Австралии называют сиру"}, {"t": "grape", "w": "ГРЕНАШ", "c": "Красный сорт юга Роны и Шатонёф-дю-Пап, в Испании — гарнача"}, {"t": "grape", "w": "МАЛЬБЕК", "c": "Красный сорт, прославивший Аргентину"}, {"t": "grape", "w": "ЗИНФАНДЕЛЬ", "c": "Калифорнийское имя сорта, который в Италии зовут примитиво"}, {"t": "grape", "w": "ПРИМИТИВО", "c": "Красный сорт Апулии"}, {"t": "grape", "w": "КАРМЕНЕР", "c": "Сорт из Бордо, ставший визитной карточкой Чили"}, {"t": "grape", "w": "ПИНОТАЖ", "c": "Южноафриканский скрещенный сорт: пино нуар × сенсо"}, {"t": "grape", "w": "САНДЖОВЕЗЕ", "c": "Главный красный сорт Тосканы и Кьянти"}, {"t": "grape", "w": "НЕББИОЛО", "c": "Сорт Бароло и Барбареско"}, {"t": "grape", "w": "ТЕМПРАНИЛЬО", "c": "Главный красный сорт Риохи"}, {"t": "grape", "w": "ГАРНАЧА", "c": "Испанское имя гренаша"}, {"t": "grape", "w": "АЛЬБАРИНЬО", "c": "Белый сорт Галисии и региона Риас-Байшас"}, {"t": "grape", "w": "ВЕРДЕХО", "c": "Белый сорт Руэды"}, {"t": "grape", "w": "ГЕВЮРЦТРАМИНЕР", "c": "Белый сорт Эльзаса с ароматом розы и личи"}, {"t": "grape", "w": "МУСКАТ", "c": "Сорт, вино из которого пахнет как сам виноград"}, {"t": "grape", "w": "ШЕНЕН", "c": "___ Блан — белый сорт Луары, Вувре и ЮАР"}, {"t": "grape", "w": "ВИОНЬЕ", "c": "Ароматный белый сорт Кондрийё"}, {"t": "grape", "w": "ФУРМИНТ", "c": "Главный белый сорт Токая"}, {"t": "grape", "w": "БАРБЕРА", "c": "Кислотный красный сорт Пьемонта"}, {"t": "grape", "w": "ДОЛЬЧЕТТО", "c": "«Маленький сладкий» — простой красный сорт Пьемонта"}, {"t": "grape", "w": "КОРВИНА", "c": "Основной сорт Вальполичеллы и амароне"}, {"t": "grape", "w": "АЛЬЯНИКО", "c": "Красный сорт Таурази, «Бароло юга»"}, {"t": "grape", "w": "ГЛЕРА", "c": "Сорт, из которого делают просекко"}, {"t": "grape", "w": "ТРЕББЬЯНО", "c": "Один из самых распространённых белых сортов Италии"}, {"t": "grape", "w": "МОНАСТРЕЛЬ", "c": "Испанское имя мурведра"}, {"t": "grape", "w": "ГАМЕ", "c": "Сорт Божоле"}, {"t": "grape", "w": "СЕМИЛЬОН", "c": "Белый сорт сладкого Сотерна"}, {"t": "grape", "w": "ЦВАЙГЕЛЬТ", "c": "Самый распространённый красный сорт Австрии"}, {"t": "grape", "w": "ТУРИГА", "c": "___ Насьонал — главный красный сорт Португалии"}, {"t": "grape", "w": "ТОКАЙ", "c": "Винный регион Венгрии и его знаменитые сладкие вина"}, {"t": "fr", "w": "БОРДО", "c": "Регион на юго-западе Франции с левым и правым берегом"}, {"t": "fr", "w": "БУРГУНДИЯ", "c": "Родина пино нуар и шардоне, гран крю и премьер крю"}, {"t": "fr", "w": "ШАМПАНЬ", "c": "Регион, где делают игристое классическим методом и только там"}, {"t": "fr", "w": "ШАБЛИ", "c": "Северная часть Бургундии, белое из шардоне"}, {"t": "fr", "w": "ЭЛЬЗАС", "c": "Регион у границы с Германией, вина в бутылках-«флейтах»"}, {"t": "fr", "w": "ЛУАРА", "c": "Долина замков и шенен блана"}, {"t": "fr", "w": "РОНА", "c": "Долина, где север — сира, а юг — гренаш"}, {"t": "fr", "w": "БОЖОЛЕ", "c": "Регион гаме и молодого вина, выходящего в ноябре"}, {"t": "fr", "w": "МЕДОК", "c": "Левый берег Бордо, родина классификации 1855 года"}, {"t": "fr", "w": "ПОМРОЛЬ", "c": "Апелласьон правого берега, где мерло делает Петрюс"}, {"t": "fr", "w": "СОТЕРН", "c": "Сладкое вино Бордо из винограда с благородной плесенью"}, {"t": "fr", "w": "ПРОВАНС", "c": "Регион самых известных бледных розовых вин"}, {"t": "fr", "w": "ЛАНГЕДОК", "c": "Большой регион юга Франции у Средиземного моря"}, {"t": "fr", "w": "САНСЕР", "c": "Апелласьон Луары, совиньон блан с кремнистым тоном"}, {"t": "fr", "w": "КРЕМАН", "c": "Французское игристое классическим методом не из Шампани"}, {"t": "fr", "w": "ШАТО", "c": "Так в Бордо называют винодельческое хозяйство"}, {"t": "fr", "w": "ДЕГОРЖАЖ", "c": "Удаление осадка из горлышка шампанского"}, {"t": "fr", "w": "РЕМЮАЖ", "c": "Поворачивание бутылок шампанского, чтобы осадок сполз к горлышку"}, {"t": "it", "w": "ТОСКАНА", "c": "Регион Кьянти, Брунелло и Болгери"}, {"t": "it", "w": "ПЬЕМОНТ", "c": "Регион Бароло, Барбареско и Асти"}, {"t": "it", "w": "ВЕНЕТО", "c": "Регион просекко, соаве и амароне"}, {"t": "it", "w": "КЬЯНТИ", "c": "Красное из санджовезе, на горлышке Классико — чёрный петух"}, {"t": "it", "w": "БАРОЛО", "c": "«Король вин» из неббиоло"}, {"t": "it", "w": "БАРБАРЕСКО", "c": "Сосед Бароло, тоже из неббиоло"}, {"t": "it", "w": "БРУНЕЛЛО", "c": "___ ди Монтальчино — санджовезе с долгой выдержкой"}, {"t": "it", "w": "АМАРОНЕ", "c": "Сухое мощное вино из подвяленного винограда Вальполичеллы"}, {"t": "it", "w": "РЕЧОТО", "c": "Сладкое вино Вальполичеллы из подвяленного винограда"}, {"t": "it", "w": "ПРОСЕККО", "c": "Итальянское игристое из глеры, вторичное брожение в резервуаре"}, {"t": "it", "w": "АППАССИМЕНТО", "c": "Подвяливание винограда перед брожением"}, {"t": "it", "w": "ФРАНЧАКОРТА", "c": "Итальянское игристое классическим методом из Ломбардии"}, {"t": "it", "w": "СИЦИЛИЯ", "c": "Остров Неро д'Авола и вулкана Этна"}, {"t": "it", "w": "ЭТНА", "c": "Вулкан, на склонах которого растёт нерелло маскалезе"}, {"t": "it", "w": "РИЗЕРВА", "c": "Слово на этикетке, значит более долгую выдержку"}, {"t": "it", "w": "КЛАССИКО", "c": "Историческое сердце зоны, например Кьянти ___"}, {"t": "it", "w": "СОАВЕ", "c": "Белое вино Венето из гарганеги"}, {"t": "it", "w": "АПУЛИЯ", "c": "«Каблук» итальянского сапога, родина примитиво"}, {"t": "it", "w": "ПАССИТО", "c": "Общее название сладких вин из подвяленного винограда"}, {"t": "es", "w": "РИОХА", "c": "Самый известный регион Испании, темпранильо в американском дубе"}, {"t": "es", "w": "ХЕРЕС", "c": "Креплёное вино из Андалусии"}, {"t": "es", "w": "ФИНО", "c": "Сухой херес под слоем флора"}, {"t": "es", "w": "ОЛОРОСО", "c": "Херес окислительной выдержки, без флора"}, {"t": "es", "w": "МАНСАНИЛЬЯ", "c": "Фино из Санлукар-де-Баррамеда"}, {"t": "es", "w": "ФЛОР", "c": "Плёнка дрожжей, которая защищает херес от кислорода"}, {"t": "es", "w": "СОЛЕРА", "c": "Система бочек хереса, где молодое вино смешивают со старым"}, {"t": "es", "w": "КАВА", "c": "Испанское игристое классическим методом"}, {"t": "es", "w": "КРИАНСА", "c": "Первая ступень испанской выдержки с бочкой, перед Ресервой"}, {"t": "es", "w": "РЕСЕРВА", "c": "Испанская выдержка дольше Криансы"}, {"t": "es", "w": "ПРИОРАТ", "c": "Регион Каталонии со сланцем ликорелья"}, {"t": "es", "w": "РУЭДА", "c": "Регион вердехо"}, {"t": "es", "w": "НАВАРРА", "c": "Регион к северу от Риохи, известный розовыми"}, {"t": "es", "w": "ГАЛИСИЯ", "c": "Зелёный северо-запад Испании, родина альбариньо"}, {"t": "pt", "w": "ПОРТВЕЙН", "c": "Креплёное вино долины Дору"}, {"t": "pt", "w": "ДОРУ", "c": "Река и регион портвейна"}, {"t": "pt", "w": "МАДЕЙРА", "c": "Остров и креплёное вино, которое нагревают"}, {"t": "pt", "w": "ТОНИ", "c": "Тип портвейна долгой выдержки в бочке, цвет янтаря"}, {"t": "pt", "w": "РУБИ", "c": "Самый простой молодой красный портвейн"}, {"t": "pt", "w": "АЛЕНТЕЖУ", "c": "Жаркий юг Португалии с пробковым дубом"}, {"t": "de", "w": "МОЗЕЛЬ", "c": "Река и регион рислинга на крутых сланцевых склонах"}, {"t": "de", "w": "ЭКСЛЕ", "c": "Шкала, по которой в Германии меряют сахар в винограде"}, {"t": "de", "w": "ТРОКЕН", "c": "Сухое по-немецки"}, {"t": "de", "w": "КАБИНЕТ", "c": "Самая лёгкая категория Prädikatswein"}, {"t": "de", "w": "ШПЭТЛЕЗЕ", "c": "Категория «позднего сбора» в Германии"}, {"t": "de", "w": "АУСЛЕЗЕ", "c": "Категория отборных гроздей в Германии"}, {"t": "de", "w": "АЙСВАЙН", "c": "Вино из замёрзшего на лозе винограда"}, {"t": "de", "w": "ПФАЛЬЦ", "c": "Тёплый регион Германии, второй по площади"}, {"t": "de", "w": "РЕЙНГАУ", "c": "Регион на Рейне со Шлосс Йоханнисбергом"}, {"t": "at", "w": "ВАХАУ", "c": "Долина Дуная в Австрии со стилями Штайнфедер, Федершпиль, Смарагд"}, {"t": "at", "w": "СМАРАГД", "c": "Самый полнотелый стиль Вахау, назван в честь ящерицы"}, {"t": "at", "w": "ГРЮНЕР", "c": "___ Вельтлинер — главный белый сорт Австрии"}, {"t": "at", "w": "ШТИРИЯ", "c": "Регион Австрии, известный совиньон бланом"}, {"t": "at", "w": "БУРГЕНЛАНД", "c": "Тёплый регион Австрии для красных и сладких"}, {"t": "ee", "w": "АСУ", "c": "Токайское ___ — сладкое вино, сладость меряют в путтоньо"}, {"t": "ee", "w": "ЭССЕНЦИЯ", "c": "Самый сладкий и редкий токай"}, {"t": "ee", "w": "ФЕТЯСКА", "c": "Белый и красный сорт Молдовы и Румынии"}, {"t": "ee", "w": "ПУРКАРЬ", "c": "Знаменитая молдавская винодельня"}, {"t": "ee", "w": "КРИКОВА", "c": "Молдавские подземные винные галереи"}, {"t": "ee", "w": "БИКАВЕР", "c": "«Бычья кровь» из Эгера"}, {"t": "ge", "w": "КВЕВРИ", "c": "Грузинский глиняный сосуд для брожения в земле"}, {"t": "ge", "w": "САПЕРАВИ", "c": "Красный грузинский сорт с окрашенной мякотью"}, {"t": "ge", "w": "РКАЦИТЕЛИ", "c": "Главный белый сорт Грузии"}, {"t": "ge", "w": "КАХЕТИЯ", "c": "Главный винный регион Грузии"}, {"t": "ge", "w": "КИНДЗМАРАУЛИ", "c": "Натурально полусладкое красное из саперави"}, {"t": "ge", "w": "ХВАНЧКАРА", "c": "Знаменитое полусладкое из Рачи"}, {"t": "ge", "w": "МУКУЗАНИ", "c": "Сухое красное наименование Кахетии из саперави"}, {"t": "ge", "w": "ЦИНАНДАЛИ", "c": "Сухое белое из ркацители и мцване"}, {"t": "ge", "w": "МЦВАНЕ", "c": "Белый сорт Кахетии, напарник ркацители"}, {"t": "ge", "w": "ЧАЧА", "c": "Грузинская виноградная водка"}, {"t": "am", "w": "АРЕНИ", "c": "Красный армянский сорт и пещера с древнейшей винодельней"}, {"t": "am", "w": "ВОСКЕАТ", "c": "«Золотая ягода» — белый армянский сорт"}, {"t": "ru", "w": "КУБАНЬ", "c": "Крупнейшая винодельческая зона России"}, {"t": "ru", "w": "КРЫМ", "c": "Полуостров Массандры и Нового Света"}, {"t": "ru", "w": "ДОН", "c": "Река, на которой растут цимлянский чёрный и красностоп"}, {"t": "ru", "w": "КРАСНОСТОП", "c": "___ золотовский — донской красный автохтон"}, {"t": "ru", "w": "ЦИМЛЯНСКИЙ", "c": "___ чёрный — донской сорт и игристое"}, {"t": "ru", "w": "СИБИРЬКОВЫЙ", "c": "Белый донской автохтон"}, {"t": "ru", "w": "АБРАУ", "c": "___-Дюрсо — историческое игристое России"}, {"t": "ru", "w": "МАССАНДРА", "c": "Крымское объединение знаменитых десертных вин"}, {"t": "ru", "w": "ЗГУ", "c": "Вино с защищённым географическим указанием (сокращение)"}, {"t": "nw", "w": "ЧИЛИ", "c": "Страна карменера, вытянутая вдоль Анд"}, {"t": "nw", "w": "АРГЕНТИНА", "c": "Страна мальбека и Мендосы"}, {"t": "nw", "w": "МЕНДОСА", "c": "Главный винный регион Аргентины у подножия Анд"}, {"t": "nw", "w": "НАПА", "c": "Долина Калифорнии, известная каберне"}, {"t": "nw", "w": "АВСТРАЛИЯ", "c": "Страна шираза и Пенфолдс"}, {"t": "nw", "w": "БАРОССА", "c": "Долина Австралии со старыми лозами шираза"}, {"t": "nw", "w": "МАЛЬБОРО", "c": "Регион Новой Зеландии с ярким совиньон бланом"}, {"t": "nw", "w": "СВАРТЛЕНД", "c": "Регион ЮАР, где делают вина из старых лоз шенена"}, {"t": "nw", "w": "МАЙПО", "c": "Долина у Сантьяго, лучшее каберне Чили"}, {"t": "nw", "w": "КАЛИФОРНИЯ", "c": "Главный винный штат США"}, {"t": "nw", "w": "СОНОМА", "c": "Округ Калифорнии по соседству с Напой"}, {"t": "nw", "w": "СТЕЛЛЕНБОШ", "c": "Самый известный винный район ЮАР"}, {"t": "nw", "w": "ПЕНФОЛДС", "c": "Австралийская винодельня, создавшая легендарный Grange"}, {"t": "nw", "w": "ОРЕГОН", "c": "Американский штат, известный пино нуар"}, {"t": "ksn", "w": "КОНЬЯК", "c": "Французский бренди из Шаранты, двойная перегонка"}, {"t": "ksn", "w": "АРМАНЬЯК", "c": "Гасконский бренди, часто однократной перегонки"}, {"t": "ksn", "w": "КАЛЬВАДОС", "c": "Нормандский яблочный бренди"}, {"t": "ksn", "w": "ГРАППА", "c": "Итальянский дистиллят из виноградных выжимок"}, {"t": "ksn", "w": "ВИСКИ", "c": "Дистиллят из зерна, выдержанный в бочке"}, {"t": "ksn", "w": "СОЛОД", "c": "Пророщенный и высушенный ячмень для виски"}, {"t": "ksn", "w": "АЙЛА", "c": "Шотландский остров торфяных виски"}, {"t": "ksn", "w": "ТОРФ", "c": "От его дыма виски становится копчёным"}, {"t": "ksn", "w": "БУРБОН", "c": "Американский виски минимум из 51% кукурузы"}, {"t": "ksn", "w": "РОМ", "c": "Дистиллят из сахарного тростника или мелассы"}, {"t": "ksn", "w": "ТЕКИЛА", "c": "Мексиканский дистиллят из голубой агавы"}, {"t": "ksn", "w": "МЕСКАЛЬ", "c": "Мексиканский дистиллят из агавы с дымным вкусом"}, {"t": "ksn", "w": "АГАВА", "c": "Растение для текилы"}, {"t": "ksn", "w": "ДЖИН", "c": "Крепкий напиток, где главный аромат — можжевельник"}, {"t": "ksn", "w": "МОЖЖЕВЕЛЬНИК", "c": "Главная ягода в джине"}, {"t": "ksn", "w": "ПЕРЕГОНКА", "c": "Дистилляция по-русски"}, {"t": "ksn", "w": "АЛАМБИК", "c": "Медный перегонный куб"}, {"t": "ksn", "w": "ПИСКО", "c": "Виноградный бренди Перу и Чили"}];
+const THEMES = [
+  {k:"all", t:"Всё вперемешку", m:null},
+  {k:"base", t:"Базовый курс", m:["base"]},
+  {k:"grape", t:"Сорта", m:["grape"]},
+  {k:"fr", t:"Франция", m:["fr"]},
+  {k:"it", t:"Италия", m:["it"]},
+  {k:"ib", t:"Испания и Португалия", m:["es","pt"]},
+  {k:"de", t:"Германия, Австрия, Венгрия, Молдова", m:["de","at","ee"]},
+  {k:"ge", t:"Грузия, Армения, Россия", m:["ge","am","ru"]},
+  {k:"nw", t:"Новый Свет", m:["nw"]},
+  {k:"ksn", t:"Крепкие напитки", m:["ksn"]},
+];
+const KEY="wine-cross-v1", MAXW=13, MAXH=13;
+let st={theme:"all",solved:0,best:{}};
+try{ const s=JSON.parse(localStorage.getItem(KEY)||"null"); if(s) st=Object.assign(st,s); }catch(e){}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(st)); }catch(e){} }
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+function shuf(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ---------- generator ---------- */
+function build(pool, target){
+  const g=new Map(), key=(r,c)=>r+","+c, words=[];
+  let minR=0,maxR=0,minC=0,maxC=0;
+  const at=(r,c)=>g.get(key(r,c));
+  function fits(w,r,c,d){
+    const dr=d?1:0, dc=d?0:1; let cross=0;
+    if(at(r-dr,c-dc)||at(r+dr*w.length,c+dc*w.length)) return -1;
+    let r0=Math.min(minR,r), r1=Math.max(maxR,r+dr*(w.length-1)), c0=Math.min(minC,c), c1=Math.max(maxC,c+dc*(w.length-1));
+    if(r1-r0+1>MAXH||c1-c0+1>MAXW) return -1;
+    for(let i=0;i<w.length;i++){
+      const rr=r+dr*i, cc=c+dc*i, x=at(rr,cc);
+      if(x){ if(x.ch!==w[i]||x[d?"v":"h"]) return -1; cross++; }
+      else if(at(rr+dc,cc+dr)||at(rr-dc,cc-dr)) return -1;
+    }
+    return cross;
+  }
+  function put(it,r,c,d){
+    const dr=d?1:0, dc=d?0:1, w=it.w;
+    for(let i=0;i<w.length;i++){ const rr=r+dr*i, cc=c+dc*i, k=key(rr,cc); const x=g.get(k)||{ch:w[i]}; x[d?"v":"h"]=true; g.set(k,x); }
+    minR=Math.min(minR,r); maxR=Math.max(maxR,r+dr*(w.length-1)); minC=Math.min(minC,c); maxC=Math.max(maxC,c+dc*(w.length-1));
+    words.push({w:it.w,q:it.c,r,c,d});
+  }
+  const list=shuf(pool), first=list.findIndex(x=>x.w.length>=6&&x.w.length<=MAXW);
+  const f=list.splice(first<0?0:first,1)[0]; if(f.w.length>MAXW) return null;
+  put(f,0,0,0);
+  let crosses=0;
+  for(let pass=0;pass<2&&words.length<target;pass++){
+    for(const it of list){
+      if(words.length>=target) break;
+      if(words.some(x=>x.w===it.w)||it.w.length>MAXW) continue;
+      let best=null;
+      for(const wd of words){ for(let i=0;i<wd.w.length;i++){ const ch=wd.w[i];
+        const rr=wd.r+(wd.d?i:0), cc=wd.c+(wd.d?0:i);
+        for(let j=0;j<it.w.length;j++){ if(it.w[j]!==ch) continue;
+          const d=1-wd.d, r=d?rr-j:rr, c=d?cc:cc-j, n=fits(it.w,r,c,d);
+          if(n>0&&(!best||n>best.n||(n===best.n&&Math.random()<.4))) best={r,c,d,n};
+        } } }
+      if(best){ put(it,best.r,best.c,best.d); crosses+=best.n; }
+    }
+  }
+  const area=(maxR-minR+1)*(maxC-minC+1);
+  words.forEach(w=>{ w.r-=minR; w.c-=minC; });
+  return {words,h:maxR-minR+1,w:maxC-minC+1,score:words.length*20+crosses*4-area/6};
+}
+function generate(pool){
+  const target=Math.min(12,pool.length); let best=null;
+  for(let i=0;i<120;i++){ const b=build(pool,target); if(b&&(!best||b.score>best.score)) best=b; }
+  // numbering
+  const starts=[...best.words].sort((a,b)=>a.r-b.r||a.c-b.c); let n=0, last="";
+  starts.forEach(w=>{ const k=w.r+","+w.c; if(k!==last){ n++; last=k; } w.n=n; });
+  best.words.sort((a,b)=>a.d-b.d||a.n-b.n);
+  return best;
+}
+
+/* ---------- game state ---------- */
+let P=null, cells=null, cur=null, wi=0, t0=0, tick=null, hints=0, finished=false;
+function cellsOf(w){ const a=[]; for(let i=0;i<w.w.length;i++) a.push(w.d?[w.r+i,w.c]:[w.r,w.c+i]); return a; }
+function startGame(){
+  const th=THEMES.find(x=>x.k===st.theme);
+  const pool=BANK.filter(x=>!th.m||th.m.includes(x.t));
+  P=generate(pool); hints=0; finished=false;
+  cells=[]; for(let r=0;r<P.h;r++){ cells.push([]); for(let c=0;c<P.w;c++) cells[r].push(null); }
+  P.words.forEach((w,i)=>cellsOf(w).forEach(([r,c],j)=>{ const x=cells[r][c]||(cells[r][c]={a:w.w[j],v:"",ws:[],bad:false,hint:false}); x.ws.push(i); }));
+  P.words.forEach(w=>{ cells[w.r][w.c].n=w.n; });
+  $("gtheme").textContent=th.t; $("win").hidden=true;
+  $("start").hidden=true; $("game").hidden=false; $("panel").hidden=false;
+  renderGrid(); renderClues(); select(0,0);
+  t0=Date.now(); clearInterval(tick); tick=setInterval(()=>{ if(!finished) $("timer").textContent=fmt(secs()); },1000);
+  window.scrollTo(0,0);
+}
+const secs=()=>Math.round((Date.now()-t0)/1000);
+function renderGrid(){
+  const avail=Math.min(document.querySelector(".wrap").clientWidth-4, 640);
+  const ph=$("panel").offsetHeight||300, byH=Math.floor((window.innerHeight-ph-110)/P.h-2);
+  const sz=Math.max(24,Math.min(40,byH,Math.floor((avail-(P.w-1)*2)/P.w)));
+  const g=$("grid"); g.style.gridTemplateColumns=`repeat(${P.w},${sz}px)`; g.style.gridAutoRows=sz+"px"; g.style.fontSize=Math.round(sz*.55)+"px";
+  let h="";
+  for(let r=0;r<P.h;r++) for(let c=0;c<P.w;c++){ const x=cells[r][c];
+    h+= x?`<div class="c" data-r="${r}" data-c="${c}">${x.n?`<span class="n">${x.n}</span>`:""}<span class="l"></span></div>`:`<div class="c x"></div>`; }
+  g.innerHTML=h; paint();
+}
+function renderClues(){
+  const part=(d,t)=>`<h3>${t}</h3><ol>`+P.words.map((w,i)=>w.d!==d?"":`<li data-i="${i}" id="cl${i}"><b>${w.n}</b>${esc(w.q)}<span class="len">(${w.w.length})</span></li>`).join("")+`</ol>`;
+  $("clues").innerHTML=part(0,"По горизонтали")+part(1,"По вертикали");
+}
+function wordDone(i){ return cellsOf(P.words[i]).every(([r,c])=>cells[r][c].v===cells[r][c].a); }
+function paint(){
+  const w=P.words[wi], inW=new Set(cellsOf(w).map(a=>a.join(",")));
+  document.querySelectorAll("#grid .c[data-r]").forEach(el=>{
+    const r=+el.dataset.r, c=+el.dataset.c, x=cells[r][c];
+    el.querySelector(".l").textContent=x.v;
+    el.classList.toggle("w",inW.has(r+","+c)); el.classList.toggle("cur",cur&&cur[0]===r&&cur[1]===c);
+    el.classList.toggle("bad",x.bad); el.classList.toggle("hint",x.hint);
+    el.classList.toggle("done",finished&&x.v===x.a);
+  });
+  document.querySelectorAll("#clues li").forEach(li=>{ const i=+li.dataset.i; li.classList.toggle("on",i===wi); li.classList.toggle("ok",wordDone(i)&&!cellsOf(P.words[i]).some(([r,c])=>cells[r][c].bad&&finished)); });
+  $("cluetxt").innerHTML=`<b>${w.n} ${w.d?"↓":"→"}</b> ${esc(w.q)} <span class="len">(${w.w.length})</span>`;
+}
+function select(i,pos){ wi=i; const cs=cellsOf(P.words[i]);
+  if(pos===undefined){ const e=cs.findIndex(([r,c])=>!cells[r][c].v); pos=e<0?0:e; }
+  cur=cs[pos]; paint(); }
+function posIn(){ return cellsOf(P.words[wi]).findIndex(([r,c])=>r===cur[0]&&c===cur[1]); }
+function type(ch){
+  if(finished||!cur) return; const x=cells[cur[0]][cur[1]];
+  if(!x.hint){ x.v=ch; x.bad=false; }
+  const cs=cellsOf(P.words[wi]); let p=posIn();
+  if(p<cs.length-1) cur=cs[p+1];
+  else if(wordDone(wi)) { const n=nextOpen(1); if(n!==null){ select(n); afterType(); return; } }
+  afterType();
+}
+function afterType(){ paint(); checkWin(); }
+function back(){
+  if(finished||!cur) return; const cs=cellsOf(P.words[wi]); let p=posIn(), x=cells[cur[0]][cur[1]];
+  if((x.v===""||x.hint)&&p>0){ cur=cs[p-1]; x=cells[cur[0]][cur[1]]; }
+  if(!x.hint){ x.v=""; x.bad=false; } paint();
+}
+function nextOpen(step){ const n=P.words.length; for(let k=1;k<=n;k++){ const i=(wi+step*k+n*k)%n; if(!wordDone(i)) return i; } return null; }
+function checkWin(){
+  for(const row of cells) for(const x of row) if(x&&x.v!==x.a) return;
+  finish(true);
+}
+function finish(solved){
+  finished=true; clearInterval(tick); const s=secs();
+  let msg;
+  if(solved){
+    st.solved=(st.solved||0)+1;
+    const rec=st.best[st.theme]; let isRec=false;
+    if(hints===0&&(rec===undefined||s<rec)){ st.best[st.theme]=s; isRec=rec!==undefined; }
+    save();
+    msg=`<h3>Разгадано!</h3><p>Время: <b>${fmt(s)}</b>${hints?`, открыто букв: ${hints}`:", без подсказок"}.${isRec?" Новый рекорд по этой теме!":""}</p>`+
+      (hints?`<p class="stat">Рекорд считается только без подсказок.</p>`:"");
+  } else msg=`<h3>Ответы открыты</h3><p>Посмотри слова, которые не получились, и найди их в модулях. Следующий кроссворд будет другим.</p>`;
+  $("win").innerHTML=msg+`<div class="row"><button id="again">Ещё кроссворд</button><button class="ghost" id="other">Другая тема</button></div>`;
+  $("win").hidden=false; $("panel").hidden=true; paint(); window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- start screen ---------- */
+function startScreen(){
+  clearInterval(tick); $("timer").textContent="";
+  $("themes").innerHTML=THEMES.map(t=>`<button type="button" data-k="${t.k}" aria-pressed="${t.k===st.theme}">${t.t}</button>`).join("");
+  const rec=st.best[st.theme];
+  $("stats").textContent=`Разгадано кроссвордов: ${st.solved||0}`+(rec!==undefined?` · рекорд в этой теме без подсказок: ${fmt(rec)}`:"");
+  $("start").hidden=false; $("game").hidden=true; $("panel").hidden=true;
+}
+
+/* ---------- keyboard ---------- */
+const ROWS=["ЙЦУКЕНГШЩЗХЪ","ФЫВАПРОЛДЖЭ","ЯЧСМИТЬБЮ"];
+$("kb").innerHTML=ROWS.map((r,i)=>`<div class="kr">`+[...r].map(ch=>`<button type="button" data-k="${ch}">${ch}</button>`).join("")+(i===2?`<button type="button" class="wide" data-k="BS" aria-label="Стереть">⌫</button>`:"")+`</div>`).join("");
+$("kb").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; b.dataset.k==="BS"?back():type(b.dataset.k); });
+document.addEventListener("keydown",e=>{
+  if(!P||$("panel").hidden) return;
+  if(e.key==="Backspace"){ e.preventDefault(); back(); return; }
+  if(e.key==="ArrowRight"||e.key==="ArrowDown"||e.key==="Tab"){ e.preventDefault(); const n=nextOpen(1); if(n!==null) select(n); return; }
+  if(e.key==="ArrowLeft"||e.key==="ArrowUp"){ e.preventDefault(); const n=nextOpen(-1); if(n!==null) select(n); return; }
+  let k=e.key.toUpperCase(); if(k==="Ё") k="Е";
+  if(/^[А-ЯЁ]$/.test(k)&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); type(k); }
+});
+
+/* ---------- clicks ---------- */
+document.addEventListener("click",e=>{
+  const th=e.target.closest("#themes button");
+  if(th){ st.theme=th.dataset.k; save(); startScreen(); return; }
+  const c=e.target.closest("#grid .c[data-r]");
+  if(c&&!finished){ const r=+c.dataset.r, cc=+c.dataset.c, x=cells[r][cc];
+    let i=x.ws[0];
+    if(x.ws.length>1){ const same=cur&&cur[0]===r&&cur[1]===cc; i= x.ws.includes(wi)? (same?x.ws.find(k=>k!==wi):wi) : x.ws[0]; }
+    wi=i; cur=[r,cc]; paint(); return; }
+  const li=e.target.closest("#clues li");
+  if(li&&!finished){ select(+li.dataset.i); $("panel").scrollIntoView&&0; return; }
+  const id=e.target.closest("button")?.id;
+  if(id==="go"||id==="again") startGame();
+  else if(id==="newg"||id==="other") startScreen();
+  else if(id==="prev"){ const n=nextOpen(-1); if(n!==null) select(n); }
+  else if(id==="next"){ const n=nextOpen(1); if(n!==null) select(n); }
+  else if(id==="check"){ let wrong=0; for(const row of cells) for(const x of row) if(x&&x.v&&x.v!==x.a){ x.bad=true; wrong++; }
+    paint(); $("cluetxt").innerHTML= wrong?`<b>Ошибок: ${wrong}.</b> Они выделены красным.`:`<b>Ошибок нет.</b> Продолжай!`;
+    setTimeout(()=>{ if(!finished) paint(); },2200); }
+  else if(id==="hint"){ if(!cur||finished) return; const x=cells[cur[0]][cur[1]];
+    if(x.v!==x.a){ x.v=x.a; x.hint=true; x.bad=false; hints++; } type(x.a); }
+  else if(id==="reveal"){ if(finished) return; if(!confirm("Показать все ответы? Кроссворд не засчитается.")) return;
+    for(const row of cells) for(const x of row) if(x&&x.v!==x.a){ x.v=x.a; x.bad=true; }
+    finish(false); }
+});
+window.addEventListener("resize",()=>{ if(P&&!$("game").hidden) renderGrid(); });
+startScreen();
+</script>
+</body>
+</html>
