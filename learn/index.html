@@ -58,6 +58,14 @@ a{color:var(--wine)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile-main{color:var(--bg)}:root:not([data-theme="light"]) .tile-main .tile-d,:root:not([data-theme="light"]) .tile-main .tile-s{color:var(--bg);opacity:.85}:root:not([data-theme="light"]) .tile-main .meter i{background:var(--bg)}}
 .tile-main .meter{background:rgba(255,255,255,.25)}.tile-main .meter i{background:#fff}
 .empty{border-style:dashed}
+.nw{display:grid;gap:12px}.nw-h{display:flex;flex-direction:column;gap:2px}.nw-orig{font-size:13px;color:var(--muted)}
+.nw-shops{display:flex;flex-wrap:wrap;gap:6px}.nw-shop{font-size:12.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.nw-shop.in{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}.nw-shop.me{outline:2px solid var(--wine);outline-offset:1px}
+.nw-note{font-size:14px;padding:8px 10px;border-radius:8px;background:var(--wine-soft)}
+.nw-facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:0}.nw-facts dt{color:var(--muted)}.nw-facts dd{margin:0}
+.nw-text p{margin:0 0 10px}.nw-say{border-left:3px solid var(--wine);padding:6px 12px;font-style:italic}
+.nw-q{display:grid;gap:6px}.nw-q .opt.ok{border-color:var(--ok);background:var(--ok-soft)}.nw-q .opt.bad{border-color:var(--bad);background:var(--bad-soft)}
+.nw-q .e{font-size:13px;color:var(--muted)}
 .final{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .btn,button{font:inherit;font-weight:600;border-radius:999px;padding:11px 20px;border:1px solid var(--wine);background:var(--wine);color:var(--surface);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 .btn.ghost,button.ghost{background:transparent;color:var(--wine)}
@@ -182,7 +190,8 @@ button:focus-visible,a:focus-visible,.opt:focus-visible{outline:2px solid var(--
       <div class="top"><a href="#">← Главная</a></div>
       <h1>Новинки</h1>
       <p class="lead">Новые вина на нашей полке: что это, как подать и что сказать гостю. Отмечено, в какие магазины они приехали.</p>
-      <div class="card empty"><h3>Первый выпуск готовится</h3><p class="lead" style="font-size:14px">Новинки появятся здесь после ближайшей поставки.</p></div>
+      <div class="sh-top" id="news-pick"></div>
+      <div id="news-list" class="stack"></div>
     </div>
   </section>
 
@@ -197,6 +206,7 @@ button:focus-visible,a:focus-visible,.opt:focus-visible{outline:2px solid var(--
   </section>
 </div>
 
+<script src="news.js"></script>
 <script src="shelf.js"></script>
 <script src="shelf-ui.js"></script>
 <script>
@@ -258,7 +268,7 @@ function renderQuiz(){
   $("quiz").innerHTML=h;
 }
 document.addEventListener("click",e=>{
-  const b=e.target.closest(".opt"); if(!b||b.disabled) return;
+  const b=e.target.closest(".opt"); if(!b||b.disabled||!cur||b.closest(".nw-q")) return;
   const i=+b.dataset.q, o=+b.dataset.o, q=TESTS[cur.id][i];
   ans[i]=o;
   document.querySelectorAll(`.opt[data-q="${i}"]`).forEach(x=>{ x.disabled=true; if(+x.dataset.o===0) x.classList.add("right"); });
@@ -352,9 +362,40 @@ function awInit(root){
   });
 }
 
+
+let newsStore=null;
+function newsRender(){
+  const L=typeof NEWS!=="undefined"?NEWS:[], S=typeof NEWS_STORES!=="undefined"?NEWS_STORES:[];
+  st.news=st.news||{};
+  $("news-pick").innerHTML=`<div class="sh-pick"><span>Я сегодня в магазине:</span>`+["Все",...S].map((n,i)=>`<button type="button" class="sh-st${(i===0&&newsStore===null)||newsStore===i-1?" on":""}" data-ns="${i-1}">${n}</button>`).join("")+`</div>`;
+  if(!L.length){ $("news-list").innerHTML=`<div class="card empty"><h3>Первый выпуск готовится</h3><p class="lead" style="font-size:14px">Новинки появятся здесь после ближайшей поставки.</p></div>`; return; }
+  $("news-list").innerHTML=L.map(n=>{
+    const here=newsStore===null?null:!!n.shops[newsStore];
+    const shops=S.map((x,i)=>`<span class="nw-shop${n.shops[i]?" in":""}${newsStore===i?" me":""}">${n.shops[i]?"✓ ":""}${x}</span>`).join("");
+    const note=here===false?`<p class="nw-note">В «${S[newsStore]}» эта новинка не приехала. Знать её всё равно полезно: гость может спросить — подскажи, где она есть, или предложи похожее.</p>`:"";
+    const done=st.news[n.id];
+    const quiz=n.quiz.map((q,qi)=>{ const ord=shuffle(q.o.length,qi*17+n.id.length); return `<div class="nw-q" data-n="${n.id}" data-q="${qi}"><p style="margin:6px 0 0"><b>${qi+1}. ${esc(q.q)}</b></p>`+ord.map(o=>`<button type="button" class="opt" data-o="${o}">${esc(q.o[o])}</button>`).join("")+`<p class="e" hidden></p></div>`; }).join("");
+    return `<article class="card nw" id="nw-${n.id}"><div class="nw-h"><span class="count">Новинка · ${esc(n.week)}${done?" · ✓ проверено":""}</span><h2>${esc(n.name)}</h2><span class="nw-orig">${esc(n.orig)}</span></div>
+      <div><p class="count" style="margin:0 0 6px">Приехала в:</p><div class="nw-shops">${shops}</div></div>${note}
+      <dl class="nw-facts">${n.facts.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      <div class="nw-text">${n.text}</div><p class="nw-say">${esc(n.say)}</p>
+      <details><summary style="cursor:pointer;color:var(--wine)">Проверь себя — ${n.quiz.length} вопроса</summary>${quiz}</details></article>`;
+  }).join("");
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-ns]"); if(b){ const v=+b.dataset.ns; newsStore=v<0?null:v; newsRender(); return; }
+  const o=e.target.closest(".nw-q .opt"); if(!o) return;
+  const box=o.closest(".nw-q"), n=NEWS.find(x=>x.id===box.dataset.n), q=n.quiz[+box.dataset.q], ok=+o.dataset.o===0;
+  box.querySelectorAll(".opt").forEach(x=>{ x.disabled=true; if(+x.dataset.o===0) x.classList.add("ok"); });
+  if(!ok) o.classList.add("bad");
+  const ex=box.querySelector(".e"); ex.textContent=(ok?"Верно. ":"Не совсем. ")+q.e; ex.hidden=false;
+  const art=o.closest("article"); if([...art.querySelectorAll(".nw-q")].every(x=>x.querySelector(".opt:disabled"))){ st.news=st.news||{}; st.news[n.id]=1; save(); newsTile(); }
+});
+function newsTile(){ const L=typeof NEWS!=="undefined"?NEWS:[]; st.news=st.news||{}; const nn=L.filter(n=>!st.news[n.id]).length;
+  $("ts-news").textContent = L.length ? (nn?`Новых вин: ${nn} — прочитай и ответь на вопросы.`:`Все новинки проверены · последняя от ${L[0].week}`) : "Новые вина на полке и что о них сказать гостю."; }
 const SECS=["learn","tests","games","news"];
 function route(){ const h=location.hash.slice(1); if(/^[a-z]\d+$/.test(h)){ openMod(h); return; }
-  hub(); const sec=SECS.includes(h)?h:null; $("home").hidden=!!sec; SECS.forEach(k=>$("sec-"+k).hidden=k!==sec);
+  hub(); newsTile(); const sec=SECS.includes(h)?h:null; if(sec==="news"){ newsStore=null; newsRender(); } $("home").hidden=!!sec; SECS.forEach(k=>$("sec-"+k).hidden=k!==sec);
   if(sec==="learn" && lastMod){ const el=document.querySelector(`a[href="#${lastMod}"]`); if(el){ el.scrollIntoView({block:"center"}); lastMod=null; return; } }
   window.scrollTo(0,0); }
 let lastMod=null;
