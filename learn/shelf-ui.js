@@ -1,11 +1,11 @@
 // «Наша полка» в модулях: реальные вина из ассортимента по теме модуля и под каждой карточкой сорта.
-// Данные — SHELF из shelf.js. Магазин сотрудник выбирает один раз, выбор хранится на телефоне.
+// Данные — SHELF из shelf.js. Магазин выбирается при каждом открытии модуля (сотрудник может работать в разных магазинах); выбор не запоминается.
 (function(){
 const STORES=['Б.Октябрьская','Горвал','Иваново','Нахимсона'];
 const SKEY='wine-shelf-store';
 const F={a:0,n:1,t:2,c:3,s:4,co:5,r:6,gr:7,k:8,vr:9};
 const W=(typeof SHELF!=='undefined'?SHELF:[]).map(r=>{const o={};for(const k in F)o[k]=r[F[k]];return o;});
-let store=null; try{ const s=localStorage.getItem(SKEY); store=s===null?null:+s; if(isNaN(store))store=null; }catch(e){}
+let store=null; try{ localStorage.removeItem(SKEY); }catch(e){}
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const qty=w=>store===null?w.k.reduce((a,b)=>a+b,0):w.k[store];
 const nm=w=>w.n.replace(/,\s*(19|20)\d\d\b/,'');
@@ -84,12 +84,14 @@ function list(l,limit){
   return {n, html:`<ul class="sh-list">${s.slice(0,lim).map(item).join('')}</ul>`+(s.length>lim?`<details class="sh-more"><summary>ещё ${s.length-lim}</summary><ul class="sh-list">${s.slice(lim).map(item).join('')}</ul></details>`:'')};
 }
 function picker(){
-  return `<div class="sh-pick"><span>Мой магазин:</span>`+['Все',...STORES].map((s,i)=>`<button type="button" class="sh-st${(i===0&&store===null)||(i>0&&store===i-1)?' on':''}" data-st="${i-1}">${s}</button>`).join('')+`</div>`;
+  return `<div class="sh-pick"><span>Я сегодня в магазине:</span>`+['Все',...STORES].map((s,i)=>`<button type="button" class="sh-st${(i===0&&store===null)||(i>0&&store===i-1)?' on':''}" data-st="${i-1}">${s}</button>`).join('')+`</div>`;
 }
 let lastMod=null, lastEl=null;
-function render(m, el){
+function render(m, el, keep){
+  if(!keep) store=null;
   lastMod=m; lastEl=el;
-  el.querySelectorAll('.sh-box,.sh-grape').forEach(x=>x.remove());
+  el.querySelectorAll('.sh-box,.sh-grape,.sh-top').forEach(x=>x.remove());
+  let any=false;
   // под карточками сортов
   el.querySelectorAll('h3').forEach(h=>{
     const f=GRAPE[h.textContent.replace(/\s+/g,' ').trim()]; if(!f) return;
@@ -98,22 +100,24 @@ function render(m, el){
     const L=list(l,8);
     const d=document.createElement('details'); d.className='sh-grape';
     d.innerHTML=`<summary>Вся наша полка: ${l.length}${store!==null?` · в твоём магазине: ${L.n}`:''}</summary>`+L.html;
-    (after&&after.tagName==='UL'?after:h).after(d);
+    (after&&after.tagName==='UL'?after:h).after(d); any=true;
   });
+  const gs0=groupsFor(m.id);
+  if(any||(gs0&&gs0.length)){ const top=document.createElement('div'); top.className='sh-top'; top.innerHTML=picker()+`<p class="sh-hint">${store===null?'В каком ты сегодня магазине? Выбери — и в списках «Наша полка» сначала будет то, что стоит у тебя.':'Списки «Наша полка» показаны для магазина «'+STORES[store]+'».'}</p>`; el.prepend(top); }
   // по теме модуля
   const gs=groupsFor(m.id); if(!gs||!gs.length) return;
   const box=document.createElement('div'); box.className='card sh-box';
-  box.innerHTML=`<p class="eyebrow">Наша полка</p><h3 style="margin:0">Вина по теме модуля</h3><p class="lead" style="font-size:14px">Ассортимент на ${typeof SHELF_DATE!=='undefined'?SHELF_DATE:''}. Выбери свой магазин — сначала будет то, что стоит у тебя.</p>`+picker()+
+  box.innerHTML=`<p class="eyebrow">Наша полка</p><h3 style="margin:0">Вина по теме модуля</h3><p class="lead" style="font-size:14px">Ассортимент на ${typeof SHELF_DATE!=='undefined'?SHELF_DATE:''}. Выбери магазин, где ты сейчас работаешь, — сначала будет то, что стоит там.</p>`+picker()+
     gs.map(([t,l])=>{ const L=list(l,10); return `<details class="sh-g"${gs.length<=2?' open':''}><summary><b>${esc(t)}</b> <span class="count">${l.length}${store!==null?` · у тебя ${L.n}`:''}</span></summary>${L.html}</details>`; }).join('');
   el.appendChild(box);
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest('.sh-st'); if(!b) return;
-  const v=+b.dataset.st; store=v<0?null:v; try{ store===null?localStorage.removeItem(SKEY):localStorage.setItem(SKEY,String(store)); }catch(_){}
-  if(lastMod&&lastEl) render(lastMod,lastEl);
+  const v=+b.dataset.st; store=v<0?null:v;
+  if(lastMod&&lastEl) render(lastMod,lastEl,true);
 });
 window.shelfAugment=render;
-const css=`.sh-box{margin-top:18px}.sh-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;color:var(--muted)}
+const css=`.sh-box{margin-top:18px}.sh-top{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:16px}.sh-hint{margin:6px 0 0;font-size:13px;color:var(--muted)}.sh-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;color:var(--muted)}
 .sh-st{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
 .sh-st.on{background:var(--wine);border-color:var(--wine);color:#fff}
 .sh-g,.sh-grape{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
