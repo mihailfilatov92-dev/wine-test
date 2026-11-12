@@ -343,7 +343,7 @@ function buildMsg(){
   let t=`ТЕСТ ПО ВИНУ — РЕЗУЛЬТАТ\n`+(trial()?"ПРОБНЫЙ ПРОГОН — ПРОВЕРКА ТЕСТА, НЕ ЗАСЧИТЫВАЕТСЯ\n":"")+`Итоговый тест, версия 3\nФИО: ${st.fio}\n`+(st.shop?`Магазин: ${st.shop}\n`:"")+`Дата: ${date}\nВариант: ${st.seed}\nКод допуска: ${st.code||"—"}\n${timeLine()}\n\n`+
     g.map((x,k)=>`${nm[k]}: ${x.ok}/${x.tot}, ошибок ${x.tot-x.ok} (можно до ${lim()[k]})`+(x.wrong.length?` · ошибки: ${x.wrong.join(", ")}`:" · без ошибок")).join("\n")+
     `\nВерных ответов: ${sum}/60\nРезультат: ${pc}% (${w}/${MAXW}) — ${verdict(pc,g)}\nПо блокам: ${blocks()}\n\nЧасть 4 (своими словами):\n`;
-  DATA.p4.forEach((q,i)=>{ const a=st.a.p4[i]||{}; t+=`\n${i+1}. ${q.s} [${q.id}]\n`+q.f.map((f,j)=>`${f}: ${(a[j]||"").trim()||"—"}`).join("\n")+"\n"; });
+  DATA.p4.forEach((q,i)=>{ const a=st.a.p4[i]||{}; t+=`\n№${i+1} · ${q.s} [${q.id}]\n`+q.f.map((f,j)=>`${f}: ${(a[j]||"").trim()||"—"}`).join("\n")+"\n"; });
   const notes=Object.entries(st.notes).filter(([k,v])=>v.trim());
   if(notes.length){
     t+=`\nЗАМЕЧАНИЯ К ВОПРОСАМ:\n`+notes.sort().map(([k,v])=>{const [p,i]=k.split("-"); const q=DATA[p]&&DATA[p][+i]; return `Часть ${p.slice(1)}, вопрос ${+i+1} [${q?q.id:"?"}]: ${v.trim()}`;}).join("\n")+"\n";
@@ -372,7 +372,9 @@ $("vbtn").addEventListener("click",()=>{
   const raw=$("vin").value; const m=raw.match(/Код проверки:\s*([A-Z0-9]{5}-[A-Z0-9]{5})/i); const r=$("vres");
   if(!m){ r.textContent="Не нашёл код проверки в тексте."; r.className="vres bad"; return; }
   const body=raw.slice(0, raw.lastIndexOf(m[0]));
-  const ok = code(body).toUpperCase()===m[1].toUpperCase();
+  // Telegram иногда съедает нумерацию «1. 2. 3.» в старых сообщениях — пробуем вернуть её
+  let n=0; const renum=body.replace(/^(?!\d+\. )(.+\[(?:OW|OK|IO)-\d+\])$/gm,(x,l)=>`${++n}. ${l}`);
+  const ok = [body,renum].some(b=>code(b).toUpperCase()===m[1].toUpperCase());
   const am=body.match(/Код допуска:\s*([0-9]{5}-[0-9]{3})/), adm = am ? (parseCode(am[1]) ? ` Код допуска ${am[1]} — настоящий, сверь, кому ты его выдавал.` : ` Код допуска ${am[1]} — не наш.`) : " Кода допуска в тексте нет.";
   r.textContent= (ok ? "Код совпал: результат не меняли." : "Код не совпал: текст после теста меняли или он скопирован не целиком.")+adm;
   r.className = "vres "+(ok?"ok":"bad");
