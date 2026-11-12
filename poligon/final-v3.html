@@ -186,14 +186,17 @@ function timeLine(){ if(!st.t0) return "Время: —"; const end=st.tEnd||Dat
 
 const CSALT = "345b222a7fdf", UKEY = "wine-final-v3-demo-used";
 // Предел ошибок по частям «зашит» в код допуска: у каждого режима своя формула контрольных цифр.
-const MODES=[[6,10,14],[3,10,14],[6,6,8],[3,6,8]];
+const MODES=[[6,10,14],[3,10,14],[6,6,8],[3,6,8],[3,6,8]];
+const TRIAL=4; // коды для проверки теста коллегами: пробный прогон + замечания к вопросам
+function trial(){ return st.mode===TRIAL; }
 function acheck(s,m){ return String(fnv(m ? CSALT+"|"+m+"|"+s : CSALT+s)%1000).padStart(3,"0"); }
 function codeMode(c){ const s=String(c).slice(0,5), k=String(c).slice(-3); for(let m=0;m<MODES.length;m++) if(acheck(s,m)===k) return m; return 0; }
 function parseCode(v){ const d=String(v).replace(/\D/g,""); if(d.length!==8||d[0]==="0") return ""; const s=d.slice(0,5); return MODES.some((_,m)=>acheck(s,m)===d.slice(5)) ? s+"-"+d.slice(5) : ""; }
 function demoCode(){ const s=String(10000+Math.floor(Math.random()*89999)); return s+"-"+String((+acheck(s)+1)%1000).padStart(3,"0"); }
 function usedCodes(){ try{ return JSON.parse(localStorage.getItem(UKEY)||"[]"); }catch(e){ return []; } }
 function markUsed(c){ try{ const u=usedCodes(); if(!u.includes(c)){ u.push(c); localStorage.setItem(UKEY,JSON.stringify(u)); } }catch(e){} }
-const review = location.hash.replace("#","").toLowerCase() === "proverka";
+const reviewHash = location.hash.replace("#","").toLowerCase() === "proverka";
+function review(){ return reviewHash || trial(); }
 const $ = id => document.getElementById(id);
 const MC = ["p1","p2","p3"];
 const PARTS = [
@@ -240,7 +243,7 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){}
 function show(id){ ["s-intro","s-quiz","s-result"].forEach(x=>$(x).hidden = x!==id); window.scrollTo(0,0); }
 
 function noteBlock(part, i){
-  if(!review) return "";
+  if(!review()) return "";
   const k=part+"-"+i, v=st.notes[k]||"";
   return `<div class="note"><button type="button" class="ghost small" data-note="${k}" ${v?"hidden":""}>Замечание к вопросу</button>
     <textarea data-notein="${k}" ${v?"":"hidden"} placeholder="Что не так с вопросом или вариантами ответа?" aria-label="Замечание к вопросу ${i+1}">${esc(v)}</textarea></div>`;
@@ -303,7 +306,7 @@ $("start").addEventListener("click",()=>{
   if(false){ ce.textContent="Этот код уже использован. Для нового прохождения попроси у управляющего новый код."; ce.hidden=false; $("acode").focus(); return; }
   ce.hidden=true; st.fio=fio; st.shop=$("shop").value.trim();
   if(!st.seed || st.code!==ac){ st.code=ac; st.seed=+ac.slice(0,5)*10+7; st.a={p1:{},p2:{},p3:{},p4:{}}; st.notes={}; }
-  st.mode=codeMode(ac);
+  st.mode=codeMode(ac); $("review-intro").hidden=!review();
   build(); st.step=0; save(); renderPart(); show("s-quiz"); startTimer();
 });
 $("back").addEventListener("click",()=>{ if(st.step===0){ st.step=-1; save(); show("s-intro"); return; } st.step--; save(); renderPart(); });
@@ -339,7 +342,7 @@ function buildMsg(){
   const g=MC.map(grade), sum=g.reduce((s,x)=>s+x.ok,0), w=g.reduce((s,x)=>s+x.w,0), pc=Math.round(w/MAXW*100);
   const d=new Date(); const date=d.toLocaleDateString("ru-RU")+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
   const nm=["Часть 1 (вопросы 1–20)","Часть 2 (вопросы 21–40)","Часть 3 (вопросы 41–60)"];
-  let t=`ПОЛИГОН — ТЕСТОВЫЙ ПРОГОН, НЕ ЗАЧИТЫВАТЬ\nТЕСТ ПО ВИНУ — РЕЗУЛЬТАТ\nИтоговый тест, версия 3\nФИО: ${st.fio}\n`+(st.shop?`Магазин: ${st.shop}\n`:"")+`Дата: ${date}\nВариант: ${st.seed}\nКод допуска: ${st.code||"—"}\n${timeLine()}\n\n`+
+  let t=`ПОЛИГОН — ТЕСТОВЫЙ ПРОГОН, НЕ ЗАЧИТЫВАТЬ\nТЕСТ ПО ВИНУ — РЕЗУЛЬТАТ\n`+(trial()?"ПРОБНЫЙ ПРОГОН — ПРОВЕРКА ТЕСТА, НЕ ЗАСЧИТЫВАЕТСЯ\n":"")+`Итоговый тест, версия 3\nФИО: ${st.fio}\n`+(st.shop?`Магазин: ${st.shop}\n`:"")+`Дата: ${date}\nВариант: ${st.seed}\nКод допуска: ${st.code||"—"}\n${timeLine()}\n\n`+
     g.map((x,k)=>`${nm[k]}: ${x.ok}/${x.tot}, ошибок ${x.tot-x.ok} (можно до ${lim()[k]})`+(x.wrong.length?` · ошибки: ${x.wrong.join(", ")}`:" · без ошибок")).join("\n")+
     `\nВерных ответов: ${sum}/60\nРезультат: ${pc}% (${w}/${MAXW}) — ${verdict(pc,g)}\nПо блокам: ${blocks()}\n\nЧасть 4 (своими словами):\n`;
   DATA.p4.forEach((q,i)=>{ const a=st.a.p4[i]||{}; t+=`\n${i+1}. ${q.s} [${q.id}]\n`+q.f.map((f,j)=>`${f}: ${(a[j]||"").trim()||"—"}`).join("\n")+"\n"; });
@@ -352,7 +355,7 @@ function buildMsg(){
 function result(){ if(tick){ clearInterval(tick); tick=null; } if(st.t0 && !st.tEnd){ st.tEnd=Date.now(); save(); }
   const {t,g,sum,w,pc}=buildMsg(); if(st.code) markUsed(st.code);
   $("res-h").textContent=`${st.fio}, тест пройден`;
-  $("res-lvl").textContent=`Результат: ${pc}% — ${verdict(pc,g)}. Ответы своими словами оценит управляющий.`;
+  $("res-lvl").textContent=(trial()?"Пробный прогон, не засчитывается. ":"")+`Результат: ${pc}% — ${verdict(pc,g)}. Ответы своими словами оценит управляющий.`;
   $("score").innerHTML=g.map((x,k)=>`<div><b>${x.ok}/${x.tot}</b><span>Вопросы ${20*k+1}–${20*k+20}</span></div>`).join("")+
     `<div><b>${sum}/60</b><span>Верных ответов</span></div><div><b>${DATA.p4.filter((_,i)=>filled(i)).length}/5</b><span>Своими словами · оценит управляющий</span></div>`;
   $("msg").textContent=t;
@@ -366,7 +369,7 @@ $("copy").addEventListener("click",async()=>{
   catch(e){ const r=document.createRange(); r.selectNodeContents($("msg")); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
     $("copied").textContent="Текст выделен — скопируй его вручную и вставь в чат с управляющим."; $("copied").hidden=false; }
 });
-$("again").addEventListener("click",()=>{ st={fio:st.fio,shop:st.shop,step:-1,seed:0,code:"",a:{p1:{},p2:{},p3:{},p4:{}},notes:{}}; save(); $("acode").value=""; $("fio").value=st.fio; $("shop").value=st.shop; show("s-intro"); });
+$("again").addEventListener("click",()=>{ st={fio:st.fio,shop:st.shop,step:-1,seed:0,code:"",a:{p1:{},p2:{},p3:{},p4:{}},notes:{}}; save(); $("review-intro").hidden=!review(); $("lim").hidden=true; $("acode").value=""; $("fio").value=st.fio; $("shop").value=st.shop; show("s-intro"); });
 $("vbtn").addEventListener("click",()=>{
   const raw=$("vin").value; const m=raw.match(/Код проверки:\s*([A-Z0-9]{5}-[A-Z0-9]{5})/i); const r=$("vres");
   if(!m){ r.textContent="Не нашёл код проверки в тексте."; r.className="vres bad"; return; }
@@ -378,10 +381,10 @@ $("vbtn").addEventListener("click",()=>{
 });
 
 function showLim(){ const c=parseCode($("acode").value), el=$("lim"); if(!c){ el.hidden=true; return; }
-  const L=MODES[codeMode(c)]; el.textContent=`Пределы ошибок для этого кода: вопросы 1–20 — не больше ${L[0]}, 21–40 — не больше ${L[1]}, 41–60 — не больше ${L[2]}.`; el.hidden=false; }
+  const L=MODES[codeMode(c)]; el.textContent=(codeMode(c)===TRIAL?"Пробный код: результат не засчитывается, под каждым вопросом можно оставить замечание. ":"")+`Пределы ошибок для этого кода: вопросы 1–20 — не больше ${L[0]}, 21–40 — не больше ${L[1]}, 41–60 — не больше ${L[2]}.`; el.hidden=false; }
 $("acode").addEventListener("input",showLim);
 load(); if(st.seed) build();
-$("review-intro").hidden=!review;
+$("review-intro").hidden=!review();
 $("fio").value=st.fio; $("shop").value=st.shop; $("acode").value=st.code||""; showLim();
 if(st.step===4) result(); else if(st.step>=0 && st.step<=3){ renderPart(); show("s-quiz"); startTimer(); } else show("s-intro");
 </script>
