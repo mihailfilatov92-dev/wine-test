@@ -102,7 +102,7 @@ label.f.sm textarea{min-height:90px;font-weight:400;font-size:15px;color:var(--i
     <h1>Итоговый тест</h1>
     <p class="lead">Проверка по всем модулям обучения: базовый курс, сорта, этикетка, страны и крепкие напитки. 60 вопросов с вариантами ответа, потом три вопроса, где нужно ответить своими словами, и две этикетки с нашей полки.</p>
     <p class="lead"><b>Оценка.</b> Сложные вопросы весят больше простых, итог — процент от баллов: 90–100% — отлично; 80–89% — хорошо, но есть куда расти; 70–79% — удовлетворительно; меньше 70% — тест не сдан.</p>
-    <p class="lead"><b>Допустимые ошибки.</b> В каждой части есть предел: в вопросах 1–20 — не больше 6 ошибок, в вопросах 21–40 — не больше 10, в вопросах 41–60 — не больше 14. Если в любой части ошибок больше, тест не сдан, даже при высоком проценте.</p>
+    <p class="lead"><b>Допустимые ошибки.</b> В каждой части (вопросы 1–20, 21–40, 41–60) есть предел ошибок. Он зависит от кода допуска: после ввода кода пределы появятся под ним и будут напоминаться в начале каждой части. Если в любой части ошибок больше предела, тест не сдан, даже при высоком проценте.</p>
     <p class="lead">Тест проходится при управляющем. Чтобы начать, нужен код допуска — его выдаёт управляющий, один код на одно прохождение. На тест — 90 минут: таймер запускается кнопкой «Начать» и не останавливается, даже если закрыть страницу. Ответы сохраняются на телефоне. Когда время выйдет, тест завершится сам с теми ответами, что успеешь дать.</p>
     <ul class="parts">
       <li><b>1</b><div><div>Вопросы 1–20</div><span>с вариантами ответа</span></div></li>
@@ -120,6 +120,7 @@ label.f.sm textarea{min-height:90px;font-weight:400;font-size:15px;color:var(--i
     <label class="f" for="acode">Код допуска <span class="hint">выдаёт управляющий, один код — одно прохождение</span>
       <input type="text" id="acode" inputmode="numeric" autocomplete="off" placeholder="12345-678">
     </label>
+    <p id="lim" class="hint" hidden></p>
     <p id="fio-err" class="err" hidden>Укажи фамилию и имя, иначе результат не засчитать.</p>
     <p id="code-err" class="err" hidden></p>
     <div class="row"><button id="start" type="button">Начать</button></div>
@@ -184,8 +185,11 @@ function timeLine(){ if(!st.t0) return "Время: —"; const end=st.tEnd||Dat
   return `Время: ${mins(end-st.t0)} мин из ${LIMIT/60000}`+(st.timeout?" · ВРЕМЯ ВЫШЛО, тест завершён автоматически":"")+(parts.length?` (${parts.join(", ")})`:""); }
 
 const CSALT = "345b222a7fdf", UKEY = "wine-final-v3-demo-used";
-function acheck(s){ return String(fnv(CSALT+s)%1000).padStart(3,"0"); }
-function parseCode(v){ const d=String(v).replace(/\D/g,""); if(d.length!==8||d[0]==="0") return ""; const s=d.slice(0,5); return acheck(s)===d.slice(5) ? s+"-"+d.slice(5) : ""; }
+// Предел ошибок по частям «зашит» в код допуска: у каждого режима своя формула контрольных цифр.
+const MODES=[[6,10,14],[3,10,14],[6,6,8],[3,6,8]];
+function acheck(s,m){ return String(fnv(m ? CSALT+"|"+m+"|"+s : CSALT+s)%1000).padStart(3,"0"); }
+function codeMode(c){ const s=String(c).slice(0,5), k=String(c).slice(-3); for(let m=0;m<MODES.length;m++) if(acheck(s,m)===k) return m; return 0; }
+function parseCode(v){ const d=String(v).replace(/\D/g,""); if(d.length!==8||d[0]==="0") return ""; const s=d.slice(0,5); return MODES.some((_,m)=>acheck(s,m)===d.slice(5)) ? s+"-"+d.slice(5) : ""; }
 function demoCode(){ const s=String(10000+Math.floor(Math.random()*89999)); return s+"-"+String((+acheck(s)+1)%1000).padStart(3,"0"); }
 function usedCodes(){ try{ return JSON.parse(localStorage.getItem(UKEY)||"[]"); }catch(e){ return []; } }
 function markUsed(c){ try{ const u=usedCodes(); if(!u.includes(c)){ u.push(c); localStorage.setItem(UKEY,JSON.stringify(u)); } }catch(e){} }
@@ -243,7 +247,7 @@ function noteBlock(part, i){
 }
 function bl(n){ return n===1?"балл":(n<5?"балла":"баллов"); }
 function renderPart(){ if(st.t0){ st.tp=st.tp||{}; if(st.tp[st.step]===undefined) st.tp[st.step]=Date.now(); }
-  const p=PARTS[st.step]; $("part-title").textContent=p.title; $("part-h").textContent=p.h; $("part-lead").textContent=p.lead;
+  const p=PARTS[st.step]; $("part-title").textContent=p.title; $("part-h").textContent=p.h; $("part-lead").textContent=p.lead+(st.step<3?` В этой части можно ошибиться не больше ${lim()[st.step]} раз.`:"");
   $("miss").hidden=true;
   let html="";
   if(p.key==="p4"){
@@ -299,6 +303,7 @@ $("start").addEventListener("click",()=>{
   if(false){ ce.textContent="Этот код уже использован. Для нового прохождения попроси у управляющего новый код."; ce.hidden=false; $("acode").focus(); return; }
   ce.hidden=true; st.fio=fio; st.shop=$("shop").value.trim();
   if(!st.seed || st.code!==ac){ st.code=ac; st.seed=+ac.slice(0,5)*10+7; st.a={p1:{},p2:{},p3:{},p4:{}}; st.notes={}; }
+  st.mode=codeMode(ac);
   build(); st.step=0; save(); renderPart(); show("s-quiz"); startTimer();
 });
 $("back").addEventListener("click",()=>{ if(st.step===0){ st.step=-1; save(); show("s-intro"); return; } st.step--; save(); renderPart(); });
@@ -323,9 +328,9 @@ $("next").addEventListener("click",()=>{
 function grade(key){ const wrong=[]; let ok=0, w=0, mw=0;
   DATA[key].forEach((q,i)=>{ mw+=q.lv; if(st.a[key][i]===0){ ok++; w+=q.lv; } else wrong.push(q.id); });
   return {ok, tot:DATA[key].length, w, mw, wrong}; }
-const MAXERR=[6,10,14];
-function over(g){ return g.map((x,k)=>({k, n:x.tot-x.ok})).filter(x=>x.n>MAXERR[x.k]); }
-function verdict(pc,g){ const o=over(g); if(o.length) return "не сдан — "+o.map(x=>`в части ${x.k+1} ошибок ${x.n}, можно не больше ${MAXERR[x.k]}`).join("; "); return level(pc); }
+function lim(){ return MODES[st.mode||0]; }
+function over(g){ return g.map((x,k)=>({k, n:x.tot-x.ok})).filter(x=>x.n>lim()[x.k]); }
+function verdict(pc,g){ const o=over(g); if(o.length) return "не сдан — "+o.map(x=>`в части ${x.k+1} ошибок ${x.n}, можно не больше ${lim()[x.k]}`).join("; "); return level(pc); }
 function level(p){ return p>=90 ? "отлично" : p>=80 ? "хорошо, но есть куда расти" : p>=70 ? "удовлетворительно" : "не сдан"; }
 function blocks(){ // верные ответы по блокам — чтобы видеть слабые темы
   const m={}; MC.forEach(k=>DATA[k].forEach((q,i)=>{ const x=m[q.g]=m[q.g]||[0,0]; x[1]++; if(st.a[k][i]===0) x[0]++; }));
@@ -335,7 +340,7 @@ function buildMsg(){
   const d=new Date(); const date=d.toLocaleDateString("ru-RU")+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
   const nm=["Часть 1 (вопросы 1–20)","Часть 2 (вопросы 21–40)","Часть 3 (вопросы 41–60)"];
   let t=`ПОЛИГОН — ТЕСТОВЫЙ ПРОГОН, НЕ ЗАЧИТЫВАТЬ\nТЕСТ ПО ВИНУ — РЕЗУЛЬТАТ\nИтоговый тест, версия 3\nФИО: ${st.fio}\n`+(st.shop?`Магазин: ${st.shop}\n`:"")+`Дата: ${date}\nВариант: ${st.seed}\nКод допуска: ${st.code||"—"}\n${timeLine()}\n\n`+
-    g.map((x,k)=>`${nm[k]}: ${x.ok}/${x.tot}, ошибок ${x.tot-x.ok} (можно до ${MAXERR[k]})`+(x.wrong.length?` · ошибки: ${x.wrong.join(", ")}`:" · без ошибок")).join("\n")+
+    g.map((x,k)=>`${nm[k]}: ${x.ok}/${x.tot}, ошибок ${x.tot-x.ok} (можно до ${lim()[k]})`+(x.wrong.length?` · ошибки: ${x.wrong.join(", ")}`:" · без ошибок")).join("\n")+
     `\nВерных ответов: ${sum}/60\nРезультат: ${pc}% (${w}/${MAXW}) — ${verdict(pc,g)}\nПо блокам: ${blocks()}\n\nЧасть 4 (своими словами):\n`;
   DATA.p4.forEach((q,i)=>{ const a=st.a.p4[i]||{}; t+=`\n${i+1}. ${q.s} [${q.id}]\n`+q.f.map((f,j)=>`${f}: ${(a[j]||"").trim()||"—"}`).join("\n")+"\n"; });
   const notes=Object.entries(st.notes).filter(([k,v])=>v.trim());
@@ -372,9 +377,12 @@ $("vbtn").addEventListener("click",()=>{
   r.className = "vres "+(ok?"ok":"bad");
 });
 
+function showLim(){ const c=parseCode($("acode").value), el=$("lim"); if(!c){ el.hidden=true; return; }
+  const L=MODES[codeMode(c)]; el.textContent=`Пределы ошибок для этого кода: вопросы 1–20 — не больше ${L[0]}, 21–40 — не больше ${L[1]}, 41–60 — не больше ${L[2]}.`; el.hidden=false; }
+$("acode").addEventListener("input",showLim);
 load(); if(st.seed) build();
 $("review-intro").hidden=!review;
-$("fio").value=st.fio; $("shop").value=st.shop; $("acode").value=st.code||"";
+$("fio").value=st.fio; $("shop").value=st.shop; $("acode").value=st.code||""; showLim();
 if(st.step===4) result(); else if(st.step>=0 && st.step<=3){ renderPart(); show("s-quiz"); startTimer(); } else show("s-intro");
 </script>
 
