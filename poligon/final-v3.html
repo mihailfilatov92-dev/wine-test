@@ -101,7 +101,8 @@ label.f.sm textarea{min-height:90px;font-weight:400;font-size:15px;color:var(--i
     <p class="eyebrow">Винотеки · итоговый тест</p>
     <h1>Итоговый тест</h1>
     <p class="lead">Проверка по всем модулям обучения: базовый курс, сорта, этикетка, страны и крепкие напитки. 60 вопросов с вариантами ответа, потом три вопроса, где нужно ответить своими словами, и две этикетки с нашей полки.</p>
-    <p class="lead"><b>Оценка:</b> 90–100% — отлично; 80–89% — хорошо, но есть куда расти; 70–79% — удовлетворительно; меньше 70% — тест не сдан.</p>
+    <p class="lead"><b>Оценка.</b> Сложные вопросы весят больше простых, итог — процент от баллов: 90–100% — отлично; 80–89% — хорошо, но есть куда расти; 70–79% — удовлетворительно; меньше 70% — тест не сдан.</p>
+    <p class="lead"><b>Допустимые ошибки.</b> В каждой части есть предел: в вопросах 1–20 — не больше 6 ошибок, в вопросах 21–40 — не больше 10, в вопросах 41–60 — не больше 14. Если в любой части ошибок больше, тест не сдан, даже при высоком проценте.</p>
     <p class="lead">Тест проходится при управляющем. Чтобы начать, нужен код допуска — его выдаёт управляющий, один код на одно прохождение. На тест — 90 минут: таймер запускается кнопкой «Начать» и не останавливается, даже если закрыть страницу. Ответы сохраняются на телефоне. Когда время выйдет, тест завершится сам с теми ответами, что успеешь дать.</p>
     <ul class="parts">
       <li><b>1</b><div><div>Вопросы 1–20</div><span>с вариантами ответа</span></div></li>
@@ -322,6 +323,9 @@ $("next").addEventListener("click",()=>{
 function grade(key){ const wrong=[]; let ok=0, w=0, mw=0;
   DATA[key].forEach((q,i)=>{ mw+=q.lv; if(st.a[key][i]===0){ ok++; w+=q.lv; } else wrong.push(q.id); });
   return {ok, tot:DATA[key].length, w, mw, wrong}; }
+const MAXERR=[6,10,14];
+function over(g){ return g.map((x,k)=>({k, n:x.tot-x.ok})).filter(x=>x.n>MAXERR[x.k]); }
+function verdict(pc,g){ const o=over(g); if(o.length) return "не сдан — "+o.map(x=>`в части ${x.k+1} ошибок ${x.n}, можно не больше ${MAXERR[x.k]}`).join("; "); return level(pc); }
 function level(p){ return p>=90 ? "отлично" : p>=80 ? "хорошо, но есть куда расти" : p>=70 ? "удовлетворительно" : "не сдан"; }
 function blocks(){ // верные ответы по блокам — чтобы видеть слабые темы
   const m={}; MC.forEach(k=>DATA[k].forEach((q,i)=>{ const x=m[q.g]=m[q.g]||[0,0]; x[1]++; if(st.a[k][i]===0) x[0]++; }));
@@ -331,8 +335,8 @@ function buildMsg(){
   const d=new Date(); const date=d.toLocaleDateString("ru-RU")+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
   const nm=["Часть 1 (вопросы 1–20)","Часть 2 (вопросы 21–40)","Часть 3 (вопросы 41–60)"];
   let t=`ПОЛИГОН — ТЕСТОВЫЙ ПРОГОН, НЕ ЗАЧИТЫВАТЬ\nТЕСТ ПО ВИНУ — РЕЗУЛЬТАТ\nИтоговый тест, версия 3\nФИО: ${st.fio}\n`+(st.shop?`Магазин: ${st.shop}\n`:"")+`Дата: ${date}\nВариант: ${st.seed}\nКод допуска: ${st.code||"—"}\n${timeLine()}\n\n`+
-    g.map((x,k)=>`${nm[k]}: ${x.ok}/${x.tot}`+(x.wrong.length?` · ошибки: ${x.wrong.join(", ")}`:" · без ошибок")).join("\n")+
-    `\nВерных ответов: ${sum}/60\nРезультат: ${pc}% (${w}/${MAXW}) — ${level(pc)}\nПо блокам: ${blocks()}\n\nЧасть 4 (своими словами):\n`;
+    g.map((x,k)=>`${nm[k]}: ${x.ok}/${x.tot}, ошибок ${x.tot-x.ok} (можно до ${MAXERR[k]})`+(x.wrong.length?` · ошибки: ${x.wrong.join(", ")}`:" · без ошибок")).join("\n")+
+    `\nВерных ответов: ${sum}/60\nРезультат: ${pc}% (${w}/${MAXW}) — ${verdict(pc,g)}\nПо блокам: ${blocks()}\n\nЧасть 4 (своими словами):\n`;
   DATA.p4.forEach((q,i)=>{ const a=st.a.p4[i]||{}; t+=`\n${i+1}. ${q.s} [${q.id}]\n`+q.f.map((f,j)=>`${f}: ${(a[j]||"").trim()||"—"}`).join("\n")+"\n"; });
   const notes=Object.entries(st.notes).filter(([k,v])=>v.trim());
   if(notes.length){
@@ -343,7 +347,7 @@ function buildMsg(){
 function result(){ if(tick){ clearInterval(tick); tick=null; } if(st.t0 && !st.tEnd){ st.tEnd=Date.now(); save(); }
   const {t,g,sum,w,pc}=buildMsg(); if(st.code) markUsed(st.code);
   $("res-h").textContent=`${st.fio}, тест пройден`;
-  $("res-lvl").textContent=`Результат: ${pc}% — ${level(pc)}. Ответы своими словами оценит управляющий.`;
+  $("res-lvl").textContent=`Результат: ${pc}% — ${verdict(pc,g)}. Ответы своими словами оценит управляющий.`;
   $("score").innerHTML=g.map((x,k)=>`<div><b>${x.ok}/${x.tot}</b><span>Вопросы ${20*k+1}–${20*k+20}</span></div>`).join("")+
     `<div><b>${sum}/60</b><span>Верных ответов</span></div><div><b>${DATA.p4.filter((_,i)=>filled(i)).length}/5</b><span>Своими словами · оценит управляющий</span></div>`;
   $("msg").textContent=t;
