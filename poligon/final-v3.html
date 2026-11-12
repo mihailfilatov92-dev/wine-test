@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Полигон · Итоговый тест</title>
+<meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prata&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -97,11 +98,10 @@ label.f.sm textarea{min-height:90px;font-weight:400;font-size:15px;color:var(--i
 <body>
 <div class="wrap">
   <section id="s-intro" class="stack">
-    <p class="eyebrow top"><a href="../learn/">← к обучению</a></p>
     <p class="eyebrow">Винотеки · итоговый тест</p>
     <h1>Итоговый тест</h1>
     <p class="lead">Проверка по всем модулям обучения: базовый курс, сорта, этикетка, страны и крепкие напитки. 60 вопросов с вариантами ответа идут лесенкой: двенадцать ступеней по пять вопросов, и с каждой ступенью вопросы сложнее — сначала факты, потом этикетки и ситуации с гостями, в конце задачи на несколько условий. Чем выше ступень, тем больше баллов за верный ответ. В конце — три вопроса, где нужно ответить своими словами, и две этикетки с нашей полки.</p>
-    <p class="lead">Чтобы начать, нужен код допуска от управляющего. На тест — 90 минут: таймер запускается кнопкой «Начать» и не останавливается, даже если закрыть страницу. Ответы сохраняются на телефоне. Когда время выйдет, тест завершится сам с теми ответами, что успеешь дать.</p>
+    <p class="lead">Тест проходится при управляющем. Чтобы начать, нужен код допуска — его выдаёт управляющий, один код на одно прохождение. На тест — 90 минут: таймер запускается кнопкой «Начать» и не останавливается, даже если закрыть страницу. Ответы сохраняются на телефоне. Когда время выйдет, тест завершится сам с теми ответами, что успеешь дать.</p>
     <ul class="parts">
       <li><b>1</b><div><div>Ступени 1–4</div><span>20 вопросов · факты, термины, связки · 1–4 балла за вопрос</span></div></li>
       <li><b>2</b><div><div>Ступени 5–8</div><span>20 вопросов · этикетки, гости, «что неверно», причины · 5–8 баллов</span></div></li>
@@ -149,7 +149,7 @@ label.f.sm textarea{min-height:90px;font-weight:400;font-size:15px;color:var(--i
     </div>
     <p id="copied" class="done" hidden>Скопировано. Теперь вставь в чат с управляющим.</p>
     <pre class="msg" id="msg" tabindex="0"></pre>
-    <div class="row"><button id="again" type="button" class="ghost small">Пройти заново</button><a class="btn ghost small" href="../learn/">К обучению</a></div>
+    <div class="row"><button id="again" type="button" class="ghost small">Пройти заново</button></div>
   </section>
 
   <details id="verify" style="margin-top:40px">
@@ -181,7 +181,7 @@ function timeLine(){ if(!st.t0) return "Время: —"; const end=st.tEnd||Dat
   const parts=[]; for(let i=0;i<=3;i++){ const a=st.tp&&st.tp[i]; if(a===undefined) continue; let b=end; for(let j=i+1;j<=3;j++){ if(st.tp[j]!==undefined){ b=st.tp[j]; break; } } parts.push(`ч.${i+1} — ${mins(b-a)} мин`); }
   return `Время: ${mins(end-st.t0)} мин из ${LIMIT/60000}`+(st.timeout?" · ВРЕМЯ ВЫШЛО, тест завершён автоматически":"")+(parts.length?` (${parts.join(", ")})`:""); }
 
-const CSALT = "0a1e78897951", UKEY = "wine-final-v3-demo-used";
+const CSALT = "345b222a7fdf", UKEY = "wine-final-v3-demo-used";
 function acheck(s){ return String(fnv(CSALT+s)%1000).padStart(3,"0"); }
 function parseCode(v){ const d=String(v).replace(/\D/g,""); if(d.length!==8||d[0]==="0") return ""; const s=d.slice(0,5); return acheck(s)===d.slice(5) ? s+"-"+d.slice(5) : ""; }
 function demoCode(){ const s=String(10000+Math.floor(Math.random()*89999)); return s+"-"+String((+acheck(s)+1)%1000).padStart(3,"0"); }
